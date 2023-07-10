@@ -1,0 +1,22 @@
+serverless deployment SAM 
+-first we need to have app.py which has handler function to deploy lambda and api gateway 
+- SAM command - at the target location would build the app and lambda locally with dependecny 
+- SAM deploy --guided , to check if our values are correct 
+- update samconfig.toml to customize the configuration. 
+- check for changeset of CFT before we deploy and approve the deploy .. 
+- if you have docker we can test SAM locally using command below 
+sam local start-api
+
+branching strategy 
+-
+
+jenkins 
+-Sanity/Smoke/CI/Regression test jobs
+-Code coverage measurement jobs
+-declarative pipeline, scripted pipeline 
+
+reports, claims, enrollment, dashboard , accounts 
+polciy -- under writing -- docs -- policy -- external
+
+
+1018140, 1011750, 1010313, 1016431, 1018047, 1012158, 1017935, 1017442, 1017442, 1017790, 1018297, 1016984, 1013303, 1014378, 1012080, 1000760 - top priority. 

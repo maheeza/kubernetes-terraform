@@ -1,0 +1,33 @@
+Terraform backend 
+-- backend does operations like plan and apply , save workspace for variables and the state, infact s3 storage 
+
+terraform state file locking 
+tflock command to lock the statefile in same directory 
+
+teraform provider 
+- to enable interaction with API we use terraform plugin it is called provider. 
+
+teraform state 
+maintains the state of infra like what changed, updated and deleted 
+
+teraform enterprise 
+-Sentinal policy enforcement before we apply changes to the infra 
+
+
+kubernetes components of control plane 
+
+-- kube apiserver - runs serveral instances for apiserver in parallel to balance traffic between. 
+--etcd - keyvalue store for secrets for all cluster data 
+--kube schdeduler - this will assign pods with nodes 
+--kube control manager -- node controller, job controller, service controller(pods for new namespace)and endpoint controller(service and pods link). 
+--cloud-controller-manager
+Node controller: For checking the cloud provider to determine if a node has been deleted in the cloud after it stops responding
+Route controller: For setting up routes in the underlying cloud infrastructure
+Service controller: For creating, updating and deleting cloud provider load balancers
+Node Compone
+
+Node components 
+kubelet, kuberproxy, container runtime. 
+
+
+

@@ -1,0 +1,19 @@
+opeshift 
+
+source2image 
+-first it will pull up the source code and identify which type the code is written. 
+- and compare that with the base image of that type code and creates a image and push it to registry for deployment. 
+-how to install agent on cluster 
+step1) SSH setup 
+ssh-keygen -t rsa -b 4096 -N '' -f ~/.ssh/id_rsa
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_rsa 
+
+step2) prepare installer 
+tar xvf openshift-install-linux.tar.gz 
+
+step3) deploying the cluster 
+mkdir install-dir 
+./openshift-install create cluster --dir=/home/ec2-user/install-dir/ --log--level=debug
+
+./openshift-install destroy cluster --dir=/home/ec2-user/install-dir/ --log--level=debug

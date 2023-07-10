@@ -1,0 +1,36 @@
+Blue green 
+1) code deploy agent with permissions, ec2 instance attached with that permission, role setup for ec2, access to internet gateway, access to NAT and s3 enpoints. 
+2) setup auto scaling to automatically launch ec2 instances. 
+
+ECS -- cluster, task definition, service, log group, CF stack, VPC, subnet, security group. 
+
+Terraform to create eks cluster 
+
+step 1) create aws provider in any region with proper credentials to communicate with all services/resources. 
+step 2) create VPC for the aws account created with CIDR range .. example: 10.0.0.0/16 
+step 3) create a IGN internet gateway for the aws account created and attach it to the VPC just created. 
+step 4) create a subnet for the account minimum 2 private and 2 public and provide CIDR range for both private and public each 
+step 5) create NAT gateway in private network to allow service to connect internet. 
+step 6) create public routing tables with IGW and private routing tables with NAT gateway and associate the subnets with them. 
+step 7) last create a cluster with role and attach the IAM policy to it, and provide the subnets of private and public where the nodes need to be created. 
+step 8) create a nodes, attach policies to it to like EKS worker node policy, EKS CNI Policy, EC2 container register policy to pull the image from ECR. 
+then create the create worker nodes and attach the private subnets that can be used 
+step 9) create permissions for applications that run on EKS cluster.. 
+
+terraform init 
+terraform apply 
+aws eks --region us-east-1 update kubeconfig --name demo -- to export kubernetes config use this command
+kubectl get svc -- to check services. 
+kubectl apply -f k8s -- apply service connection. 
+kubectl get pods -- to check if the service connection pod is running. 
+kubectl exec aws-cli -- aws s3api list-buckets (to list all buckets under that cluster) 
+
+kubectl get pods -n <namespace> -o wide
+kubectl describe pods <pod name> -n <namespace> 
+helm uninstall <release-name> -n <namespace>
+kubectl delete pv <pv-name>
+kubectl logs -f <pod name> -n <namespace>
+
+ 
+
+
