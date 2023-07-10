@@ -1,0 +1,422 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "This template is Version 1.0 designed for CYC EventBus Deployment"
+Parameters:
+   Envr:
+      Description: 'Name of the Environment'
+      Type: String
+     
+   Desc: 
+      Description: 'Description of the Event bus'
+      Type: String
+   
+   EBName:
+      Description: 'Event Bus Name Please'
+      Type: String
+   
+   RName:
+      Description: 'Event Bus Rule Name'
+      Type: String
+      
+   RoleArn:  
+      Description: 'The Amazon Resource Name (ARN) of the role that is used for invocation'
+      Type: String
+      Default: "no-Value"
+
+   TargetRoleArn1:  
+      Description: 'The Amazon Resource Name (ARN) of the role that is used for Targer 1 invocation'
+      Type: String
+      Default: "no-Value"      
+  
+   TargetRoleArn2:  
+      Description: 'The Amazon Resource Name (ARN) of the role that is used for Targer 2 invocation'
+      Type: String
+      Default: "no-Value"      
+  
+   TargetRoleArn3:  
+      Description: 'The Amazon Resource Name (ARN) of the role that is used for Targer 3 invocation'
+      Type: String
+      Default: "no-Value"      
+  
+   TargetRoleArn4:  
+      Description: 'The Amazon Resource Name (ARN) of the role that is used for Targer 4 invocation'
+      Type: String
+      Default: "no-Value"      
+  
+   TargetRoleArn5:  
+      Description: 'The Amazon Resource Name (ARN) of the role that is used for Targer 5 invocation'
+      Type: String
+      Default: "no-Value"      
+  
+   TArn1:
+      Description: 'The Amazon Resource Name (ARN) of the IAM role to be used for  triggered Target Role - 1'
+      Type: String
+      Default: "no-Value" 
+   
+   TArn2:
+      Description: 'The Amazon Resource Name (ARN) of the IAM role to be used for  triggered Target Role - 2'
+      Type: String
+      Default: "no-Value"
+
+   TArn3:
+      Description: 'The Amazon Resource Name (ARN) of the IAM role to be used for  triggered Target Role - 3'
+      Type: String
+      Default: "no-Value"
+
+   TArn4:
+      Description: 'The Amazon Resource Name (ARN) of the IAM role to be used for  triggered Target Role - 4'
+      Type: String
+      Default: "no-Value"
+
+   Source:
+      Description: 'Event Pattern Source'
+      Type: String
+      Default: "no-Value"
+      AllowedValues:
+        - aws.ecs
+        - aws.ecr
+        - aws.batch
+        - aws.s3
+        - aws.ec2
+        - aws.autoscaling
+        - no-Value
+   dtype:
+      Description: 'Event Pattern Detail Type'
+      Type: String
+      Default: "no-Value"
+
+   atype:
+      Description: 'Event Pattern Action Type'
+      Type: String
+      Default: "no-Value"
+
+   itag:
+      Description: 'ECR Image Tag'
+      Type: String
+      Default: "no-Value"
+
+   State:
+      Description: 'Indicates whether the rule is enabled'
+      Type: String
+      Default: "ENABLED"  
+      AllowedValues:
+        - ENABLED
+        - DISABLED
+
+   Idvalue:
+      Description: 'Event Bus value Id'
+      Type: String
+      Default: "no-Value" 
+   
+   Input1:
+      Description: 'Event Bus Input assigned for Target 1'
+      Type: String
+      Default: "no-Value"
+   
+   InputPath1:
+      Description: 'Event Bus InputPath assigned for Target 1'
+      Type: String
+      Default: "no-Value"
+
+   Input2:
+      Description: 'Event Bus Input assigned for Target 2'
+      Type: String
+      Default: "no-Value"
+   
+   InputPath2:
+      Description: 'Event Bus InputPath assigned for Target 2'
+      Type: String
+      Default: "no-Value"
+
+   RCPKey: 
+      Description: 'Run Command Parameters Key Assigned'
+      Type: String
+      Default: "no-Value"
+
+   ebusname: 
+      Description: 'Event Bus Name'
+      Type: String
+      Default: ''     
+   
+   EcrVal:
+      Description: Pass details value with comma seperation 
+      Type: String
+      Default: "no-Value,no-Value"
+
+   RCmd11:
+      Description: 'First Run Command 1 Value [key and Value seperated by comma]' 
+      Type: String
+      Default: "no-Value,no-Value"
+      
+   RCmd12:
+      Description: 'First Run Command 2 Value [key and Value seperated by comma]' 
+      Type: String
+      Default: "no-Value,no-Value"
+
+   RCmd13:
+      Description: 'First Run Command 3 Value [key and Value seperated by comma]' 
+      Type: String
+      Default: "no-Value,no-Value"
+
+   RCmd14:
+      Description: 'First Run Command 4 Value [key and Value seperated by comma]' 
+      Type: String
+      Default: "no-Value,no-Value"
+
+   RCmd15:
+      Description: 'First Run Command 5 Value [key and Value seperated by comma]' 
+      Type: String
+      Default: "no-Value,no-Value"
+
+   RCmd21:
+      Description: 'Second Run Command 1 Value [key and Value seperated by comma]' 
+      Type: String
+      Default: "no-Value,no-Value"
+      
+   RCmd22:
+      Description: 'Second Run Command 2 Value [key and Value seperated by comma]' 
+      Type: String
+      Default: "no-Value,no-Value"
+
+   RCmd23:
+      Description: 'Second Run Command 3 Value [key and Value seperated by comma]' 
+      Type: String
+      Default: "no-Value,no-Value"
+
+   RCmd24:
+      Description: 'Second Run Command 4 Value [key and Value seperated by comma]' 
+      Type: String
+      Default: "no-Value,no-Value"
+
+   RCmd25:
+      Description: 'Second Run Command 5 Value [key and Value seperated by comma]' 
+      Type: String
+      Default: "no-Value,no-Value"
+
+   Replace:
+      Description: Replace this value 
+      Type: String
+      Default: "no-Value"  
+   SExp: 
+      Description: Sechedule Expression value 
+      Type: String
+      Default: "no-Value"           
+Conditions:
+   RArn: !Not [!Equals [ !Ref RoleArn, "no-Value"]] 
+   Input1: !Not [!Equals [ !Ref Input1, "no-Value"]] 
+   InputPath1: !Not [!Equals [ !Ref InputPath1, "no-Value"]] 
+   Input2: !Not [!Equals [ !Ref Input2, "no-Value"]] 
+   InputPath2: !Not [!Equals [ !Ref InputPath2, "no-Value"]]    
+   TRArn1: !Not [!Equals [ !Ref TargetRoleArn1, "no-Value"]] 
+   TRArn2: !Not [!Equals [ !Ref TargetRoleArn2, "no-Value"]] 
+   TRArn3: !Not [!Equals [ !Ref TargetRoleArn3, "no-Value"]] 
+   TRArn4: !Not [!Equals [ !Ref TargetRoleArn4, "no-Value"]] 
+   TRArn5: !Not [!Equals [ !Ref TargetRoleArn5, "no-Value"]] 
+   TArn1: !Not [!Equals [ !Ref TArn1, "no-Value"]]
+   TArn2: !Not [!Equals [ !Ref TArn2, "no-Value"]]
+   TArn3: !Not [!Equals [ !Ref TArn3, "no-Value"]]
+   TArn4: !Not [!Equals [ !Ref TArn4, "no-Value"]]
+   dtype: !Not [!Equals [ !Ref dtype, "no-Value"]] 
+   atype: !Not [!Equals [ !Ref atype, "no-Value"]]
+   itag: !Not [!Equals [ !Ref itag, "no-Value"]]
+   SExp: !Not [!Equals [ !Ref SExp, "no-Value"]]
+   ecr: !Equals [ !Ref Source, "aws.ecr"]
+   ecs: !Equals [ !Ref Source, "aws.ecs"]
+   batch: !Equals [ !Ref Source, "aws.batch"]
+   RCPK: !Not [!Equals [ !Ref RCPKey, "no-Value,no-Value"]]  
+   RCmd11: !Not [!Equals [ !Ref RCmd11, "no-Value,no-Value"]]
+   RCmd12: !Not [!Equals [ !Ref RCmd12, "no-Value,no-Value"]]
+   RCmd13: !Not [!Equals [ !Ref RCmd13, "no-Value,no-Value"]]
+   RCmd14: !Not [!Equals [ !Ref RCmd14, "no-Value,no-Value"]]
+   RCmd15: !Not [!Equals [ !Ref RCmd15, "no-Value,no-Value"]]
+   RCmd21: !Not [!Equals [ !Ref RCmd21, "no-Value,no-Value"]]
+   RCmd22: !Not [!Equals [ !Ref RCmd22, "no-Value,no-Value"]]
+   RCmd23: !Not [!Equals [ !Ref RCmd23, "no-Value,no-Value"]]
+   RCmd24: !Not [!Equals [ !Ref RCmd24, "no-Value,no-Value"]]
+   RCmd25: !Not [!Equals [ !Ref RCmd25, "no-Value,no-Value"]]
+   ebusname: !Not [!Equals [ !Ref ebusname, '']]
+
+Resources:
+  EventRule:
+   Type: AWS::Events::Rule
+   Properties: 
+      EventBusName: !Ref EBName
+      Name: !Join ['-',[!Ref Envr, !Ref RName]]
+      RoleArn: !If [RArn, !Ref RoleArn, !Ref 'AWS::NoValue']
+      EventPattern:
+        !If 
+          - ecr
+          - 
+            source:
+              - !Ref Source
+            detail-type:
+                !If 
+                  - dtype  
+                  -
+                    - !Ref dtype #ECR Image Action
+                  - !Ref 'AWS::NoValue'
+            detail:
+              repository-name:
+                  Fn::Split: [",", !Ref EcrVal]
+              action-type:
+                  !If 
+                    - atype  
+                    -
+                      - !Ref atype #PUSH
+                    - !Ref 'AWS::NoValue'
+              image-tag:
+                  !If 
+                    - itag 
+                    - 
+                      - !Ref itag #QA_Ready
+                    - !Ref 'AWS::NoValue'
+          - !Ref 'AWS::NoValue' 
+      State: !Ref State
+      ScheduleExpression: !If [SExp, !Ref SExp, !Ref 'AWS::NoValue']
+      Targets: 
+        - 
+          Arn: !If [TArn1, !Ref TArn1, !Ref 'AWS::NoValue']
+#          BatchParameters: 
+#           BatchParameters
+#          EcsParameters: 
+#           EcsParameters
+          Id: !Join ["-",[!Ref Envr, !Ref Idvalue, 1]]
+          Input: !If [Input1, !Ref Input1, !Ref 'AWS::NoValue']
+          InputPath: !If [InputPath1, !Ref InputPath1, !Ref 'AWS::NoValue']
+#          InputTransformer: 
+#            !If
+#              - ecr
+#              -
+#                InputPathsMap:
+#                   Key : !Ref Replace
+#                InputTemplate: !Ref Replace
+#              - !Ref 'AWS::NoValue'
+#          KinesisParameters: 
+#            !If
+#              - KP
+#              -
+#                PartitionKeyPath: !Ref Replace
+#              - !Ref 'AWS::NoValue'
+          RoleArn: !If [TRArn1, !Ref TargetRoleArn1, !Ref 'AWS::NoValue']
+          RunCommandParameters: 
+            !If
+              - RCmd11
+              -
+                RunCommandTargets:
+                  -
+                    !If
+                      - RCmd11
+                      -
+                        Key: !Select [0, [!Split [",", !Ref RCmd11]]]
+                        Values : !Select [1, [!Split [",", !Ref RCmd11]]]
+                      - !Ref 'AWS::NoValue'
+
+                  -
+                    !If
+                      - RCmd12
+                      -
+                        Key: !Select [0, [!Split [",", !Ref RCmd12]]]
+                        Values : !Select [1, [!Split [",", !Ref RCmd12]]]
+                      - !Ref 'AWS::NoValue'
+
+                  -
+                    !If
+                      - RCmd13
+                      -
+                        Key: !Select [0, [!Split [",", !Ref RCmd13]]]
+                        Values : !Select [1, [!Split [",", !Ref RCmd13]]]
+                      - !Ref 'AWS::NoValue'
+
+                  -
+                    !If
+                      - RCmd14
+                      -
+                        Key: !Select [0, [!Split [",", !Ref RCmd14]]]
+                        Values : !Select [1, [!Split [",", !Ref RCmd14]]]
+                      - !Ref 'AWS::NoValue'
+
+                  -
+                    !If
+                      - RCmd15
+                      -
+                        Key: !Select [0, [!Split [",", !Ref RCmd15]]]
+                        Values : !Select [1, [!Split [",", !Ref RCmd15]]]
+                      - !Ref 'AWS::NoValue'
+
+              - !Ref 'AWS::NoValue'
+
+#          SqsParameters: 
+#            !If
+#              - MGI
+#              -
+#                MessageGroupId: !Ref Replace
+#              - !Ref 'AWS::NoValue'
+
+        - 
+          Arn: !If [TArn2, !Ref TArn2, !Ref 'AWS::NoValue']
+          Id: !Join ["-",[!Ref Envr, !Ref Idvalue,2]]
+          Input: !If [Input2, !Ref Input2, !Ref 'AWS::NoValue']
+          InputPath: !If [InputPath2, !Ref InputPath2, !Ref 'AWS::NoValue']
+          RoleArn: !If [TRArn2, !Ref TargetRoleArn2, !Ref 'AWS::NoValue']
+          RunCommandParameters: 
+            !If
+              - RCmd21
+              -
+                RunCommandTargets:
+                  -
+                    !If
+                      - RCmd21
+                      -
+                        Key: !Select [0, [!Split [",", !Ref RCmd21]]]
+                        Values : !Select [1, [!Split [",", !Ref RCmd21]]]
+                      - !Ref 'AWS::NoValue'
+
+                  -
+                    !If
+                      - RCmd22
+                      -
+                        Key: !Select [0, [!Split [",", !Ref RCmd22]]]
+                        Values : !Select [1, [!Split [",", !Ref RCmd22]]]
+                      - !Ref 'AWS::NoValue'
+
+                  -
+                    !If
+                      - RCmd23
+                      -
+                        Key: !Select [0, [!Split [",", !Ref RCmd23]]]
+                        Values : !Select [1, [!Split [",", !Ref RCmd23]]]
+                      - !Ref 'AWS::NoValue'
+
+                  -
+                    !If
+                      - RCmd24
+                      -
+                        Key: !Select [0, [!Split [",", !Ref RCmd24]]]
+                        Values : !Select [1, [!Split [",", !Ref RCmd24]]]
+                      - !Ref 'AWS::NoValue'
+
+                  -
+                    !If
+                      - RCmd25
+                      -
+                        Key: !Select [0, [!Split [",", !Ref RCmd25]]]
+                        Values : !Select [1, [!Split [",", !Ref RCmd25]]]
+                      - !Ref 'AWS::NoValue'
+
+              - !Ref 'AWS::NoValue'
+
+  SampleEventBusPolicy: 
+    Type: AWS::Events::EventBusPolicy
+    DependsOn: 
+      - EventRule
+    Properties: 
+        Action: "events:PutEvents"
+        EventBusName: !If [ebusname, !Ref ebusname, !Ref 'AWS::NoValue']
+        Principal: "687720138916"
+        StatementId: !Join ['-',[!Ref Envr, !If [ebusname, !Ref ebusname, 'defaulteventbus']]]
+
+Outputs:
+    ebus01:
+        Description: Event Bus Arn value
+        Value: !GetAtt [EventRule, Arn]
+        Export: 
+            Name: !Join ["-",[!Ref Envr, !Ref RName, ebus, id]] 

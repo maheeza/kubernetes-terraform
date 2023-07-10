@@ -1,0 +1,450 @@
+def projectProperties = [
+        [$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '10']],
+    ]
+node{
+	ECRURL = "081770291835.dkr.ecr.us-east-1.amazonaws.com"
+	SONAR_HOST_URL = "https://sonar.connectyourcare.net"
+	repo = "$params.reponame"
+	branch = "$params.env"
+	scriptBranch = "develop"
+	environment = "$params.env"
+	ecsRepositoryName=""
+	test=""
+	//nbt
+	nbtrepoUrl = "https://jenkins@bitbucket.connectyourcare.net/scm/cms/${repo}.git"
+	//mfm
+	noderepoUrl = "https://jenkins@bitbucket.connectyourcare.net/scm/cdm/${repo}.git"
+	//mfm lambda
+	mfmlmdrepoUrl = "https://jenkins@bitbucket.connectyourcare.net/scm/mfmlam/${repo}.git"
+	scriptUrl = "https://jenkins@bitbucket.connectyourcare.net/scm/dev/cycansible.git"
+
+	print "------------------------------------"
+	print "reponame: $params.reponame"
+	print "environment: $params.env"
+	print "------------------------------------"
+    try {
+		stage("Gathering Secrets"){
+			script {
+                if("${environment}" == "dev"){
+                    imgtag = "Dev_Ready"
+                }
+                else if("${environment}" == "qa"){
+                    imgtag = "QA_Ready"
+                }
+                else if("${environment}" == "qin"){
+                    imgtag = "QIN_Live"
+                }
+                else if("${environment}" == "int"){
+                    imgtag = "INT_Ready"
+                }
+                else if("${environment}" == "mo"){
+                    imgtag = "MO_Ready"
+                }
+                else if("${environment}" == "prd"){
+                    imgtag = "Prod_Live"
+                }
+				secret = sh (
+					script: "aws secretsmanager get-secret-value --secret-id jenkins/mfmcontrol | jq --raw-output .SecretString",
+					returnStdout: true
+				).trim()
+				def secretObj = readJSON text: secret
+				def contname = "${params.reponame}-cont"
+				def buildcont = secretObj."${contname}"
+				def (version, type, test, tag, ecrrepo, s3folder, sonar, fortify, fortifyr, fortifytoken) = buildcont.split(':')
+
+                echo "Environment is ${environment}"
+				echo "branch is ${branch}"
+				echo "version is ${version}"
+				echo "type is ${type}"
+				echo "test is ${test}"
+				echo "tag name is ${tag}"
+				echo "ecr repo is ${ecrrepo}"
+                echo "image tag is ${imgtag}"
+				echo "S3 folder :: ${s3folder}"
+				echo "sonar value is ${sonar}"
+				echo "fortify value is ${fortify}"
+				echo "fortifyr value is ${fortifyr}"
+				echo "fortifytoken value is ${fortifytoken}"
+				env.tag = "${tag}"
+				env.version = "${version}"
+				env.type = "${type}"
+				env.test = "${test}"
+				env.ecrrepo = "${ecrrepo}"
+                env.imgtag = "${imgtag}"
+				env.s3folder = "${s3folder}"
+				env.sonar = "${sonar}"
+				env.fortify = "${fortify}"
+				env.fortifyr = "${fortifyr}"
+				env.fortifytoken = "${fortifytoken}"
+
+				def descname = "${params.reponame}-desc"
+				def builddesc = secretObj."${descname}"
+				def (sonardesc, fortifydesc, fortifyrdesc) = builddesc.split(':')
+
+				echo "sonar description is ${sonardesc}"
+				echo "fortify description is ${fortifydesc}"
+				echo "fortify result description is ${fortifyrdesc}"
+				env.sonardesc = "${sonardesc}"
+				env.fortifydesc = "${fortifydesc}"
+				env.fortifyrdesc = "${fortifyrdesc}"
+			}
+		}
+		stage("Clone Scripts"){
+			if("$params.reponame" == "stagingrecord-aggregate-lambda" || "$params.reponame" == "dynamodb-stream-stagingrecord-lambda") {
+				dir("$params.reponame"){
+					checkout([$class: 'GitSCM', branches: [[name: "*/${branch}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[ credentialsId: 'bitbucket', url: "${noderepoUrl}" ]]])
+				}
+			}
+			else if("$params.reponame" == "uow-census-convertor-batch" || "$params.reponame" == "uow-enrollment-convertor-batch") {
+				dir("$params.reponame"){
+					checkout([$class: 'GitSCM', branches: [[name: "*/${branch}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[ credentialsId: 'bitbucket', url: "https://jenkins@bitbucket.connectyourcare.net/scm/mfmaw/${params.reponame}.git" ]]])
+				}
+			}
+			else if("${version}" == "nodejs10" && "${type}" != "lambda") {
+				dir('cycansible') {
+					checkout([$class: 'GitSCM',branches: [[name: '*/develop']],doGenerateSubmoduleConfigurations: false,extensions: [], submoduleCfg: [],userRemoteConfigs: [[ credentialsId: 'bitbucket', url: 'https://jenkins@bitbucket.connectyourcare.net/scm/dev/cycansible.git' ]]])
+				}
+				dir("$params.reponame"){
+					checkout([$class: 'GitSCM', branches: [[name: "*/${branch}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[ credentialsId: 'bitbucket', url: "${noderepoUrl}" ]]])
+				}
+			}
+			else if("${version}" == "nodejs10" && "${type}" == "lambda") {
+				dir("$params.reponame"){
+					checkout([$class: 'GitSCM', branches: [[name: "*/${branch}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[ credentialsId: 'bitbucket', url: "${mfmlmdrepoUrl}" ]]])
+				}
+			}
+			else if("${version}" == "corretto11" || "${version}" == "java8") {
+				dir("$params.reponame"){
+					checkout([$class: 'GitSCM', branches: [[name: "*/${branch}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[ credentialsId: 'bitbucket', url: "${noderepoUrl}" ]]])
+				}
+				dir('cycansible') {
+					checkout([$class: 'GitSCM',branches: [[name: '*/develop']],doGenerateSubmoduleConfigurations: false,extensions: [], submoduleCfg: [],userRemoteConfigs: [[ credentialsId: 'bitbucket', url: 'https://jenkins@bitbucket.connectyourcare.net/scm/dev/cycansible.git' ]]])
+				}
+			}
+			else {
+				echo "Select Java or Node Js version"
+			}
+		}
+		stage('Build preparations'){
+			gitCommitHash = sh(returnStdout: true, script: "cd $params.reponame && git rev-parse HEAD").trim()
+			shortCommitHash = gitCommitHash.take(7)
+			VERSION = shortCommitHash
+			env.BUILD_VERSION = "#${BUILD_ID}-${VERSION}"
+			currentBuild.displayName = "#${BUILD_ID}-${VERSION} [${environment} ${params.reponame}]"
+			echo "$BUILD_VERSION"
+		}
+		stage("Build"){
+			script {
+				if("${version}"=="nodejs8" || "${version}"=="nodejs10" || "${version}"=="nodejs12") {
+					if("${type}"=="ms") {
+						nodeBuild()
+					}
+					else if("${type}"=="lambda") {
+						lmdnodeBuild()
+					}
+				}
+				else if("${version}"=="corretto11" || "${version}"=="java8") {
+					if("${version}"=="corretto11") {
+					jdk = "/usr/lib/jvm/java-11-amazon-corretto"
+					env.JAVA_HOME = "${jdk}"
+					echo "jdk installation path is: ${jdk}"
+					sh "${jdk}/bin/java -version"
+					}
+					sh "java -version"
+					dir("$params.reponame"){
+						echo "reading pom"
+						pom = readMavenPom file: 'pom.xml'
+						echo "Group ID :: {pom.groupId}"
+						echo "Artifact :: ${pom.artifactId}"
+						echo "Version :: ${pom.version}"
+						echo "Packaging :: ${pom.packaging}"
+						artifact = "${pom.artifactId}-${pom.version}.${pom.packaging}"
+						echo "Artifact is ${artifact}"
+						if("${type}"=="ms" || "${type}"=="lambda") {
+							mvnBuild()
+						}
+					}
+				}
+				else {
+					echo "Select Java or Node Js version"
+				}
+			}
+		}
+		stage("Sonar Analysis"){
+			script {
+				if("${version}"=="corretto11" || "${version}"=="java8") {
+					echo "Started Sonar Analysis"
+					dir("$params.reponame") {
+						javasonarAnalysis()
+						if("${sonar}"=="Y"){
+							qualitygate()
+						}
+					}
+				}
+				else if("${version}"=="nodejs8" || "${version}"=="nodejs10" || "${version}"=="nodejs12") {
+					echo "Started Sonar Analysis"
+					dir("$params.reponame") {
+						nodesonarAnalysis()
+						if("${sonar}"=="Y"){
+							qualitygate()
+						}
+					}
+				}
+				else {
+					echo "Skipped Sonar Analysis"
+				}
+			}
+		}
+		stage("Fortify Analysis"){
+			script {
+				if("${fortify}"=="Y") {
+					echo "Started Fortify Analysis"
+					dir("$params.reponame") {
+						fortifyscan()
+					}
+				}
+				else {
+					echo "Skipped Fortify Analysis"
+				}
+			}
+		}
+		stage("Fortify Result"){
+			script {
+				if("${fortifyr}"=="Y") {
+					echo "Started Fortify Result"
+					dir("$params.reponame") {
+						fortifyresults()
+					}
+				}
+				else {
+					echo "Skipped Fortify Result"
+				}
+			}
+		}
+		stage('Push Image&Prop'){
+			script {
+				if("${type}"=="ms"){
+					if("${version}"=="corretto11" || "${version}"=="java8"){
+						deleteTempImage("${imgtag}")
+                        buildAndPushImage("${imgtag}","Build_${BUILD_ID}")
+                        uploadPropForSecreteMgr ("${environment}")
+					}
+					else if("${version}"=="nodejs8" || "${version}"=="nodejs10" || "${version}"=="nodejs12"){
+						deleteTempImage("${imgtag}")
+						PushImage("${imgtag}","Build_${BUILD_ID}")
+					}
+					else {
+						echo "Select Java or Node Js version to push image"
+					}
+				}
+				else {
+					echo "Skipped ${env.STAGE_NAME} stage for lambda builds"
+				}
+			}
+		}
+		stage('Push Lambda Artifact'){
+			script {
+				if("${type}"=="lambda"){
+					if("${version}"=="corretto11" || "${version}"=="java8"){
+						if (fileExists("${params.reponame}/target/lambda-exec.jar")) {
+							s3Upload acl: 'Private', bucket: 'cyc-repository', cacheControl: '',  file: "$params.reponame/target/lambda-exec.jar", metadatas: [''], path: "cycmfmbuild/lambdas/$environment/${s3folder}/${s3folder}.jar", sseAlgorithm: 'AES256', workingDir: ''
+							updateLambdaFunction("cycmfmbuild/lambdas/${environment}/${s3folder}/${s3folder}.jar")
+						}
+						else {
+							s3Upload acl: 'Private', bucket: 'cyc-repository', cacheControl: '',  file: "$params.reponame/target/${artifact}", metadatas: [''], path: "cycmfmbuild/lambdas/$environment/${s3folder}/${s3folder}.jar", sseAlgorithm: 'AES256', workingDir: ''
+							updateLambdaFunction("cycmfmbuild/lambdas/${environment}/${s3folder}/${s3folder}.jar")
+						}
+					}
+					else if("${version}"=="nodejs8" || "${version}"=="nodejs10" || "${version}"=="nodejs12"){
+						dir("$params.reponame"){
+							s3Upload acl: 'Private', bucket: 'cyc-repository', cacheControl: '',  file: "${params.reponame}.zip", metadatas: [''], path: "cycmfmbuild/lambdas/$environment/${s3folder}/${s3folder}.zip", sseAlgorithm: 'AES256', workingDir: ''
+							updateLambdaFunction("cycmfmbuild/lambdas/${environment}/${s3folder}/${s3folder}.zip")
+						}
+					}
+				}
+				else{
+					echo "Skipped ${env.STAGE_NAME} stage for micro service builds"
+				}
+			}
+		}
+	}
+	catch(e){
+		echo e.getMessage()
+		env.error = e.getMessage()
+	}
+	finally {
+		/*stage('Updating Build Props'){
+			sh "aws s3 cp s3://cyc-repository/Jenkins/mfm/jenkinsmfmsecret.json ."
+			sh "aws secretsmanager update-secret --secret-id jenkins/mfmcontrol --secret-string file://jenkinsmfmsecret.json"
+		}*/
+		stage('Cleaning workspace'){
+			echo 'Cleaning the Workspace'
+			sh "rm -rf *"
+			echo "Performed the cleaning process for the mono repo workspace"
+		}
+		stage('Send Email'){
+			script {
+				if("${env.fortifyr}"!="Y" && "${env.fortify}"=="Y") {
+					env.mailbody = "Fortify Analysis is done and skipped Fortify results because ${env.fortifyrdesc} \nFor more info please visit below url\n${env.BUILD_URL}\nThanks"
+				}
+				else if("${env.sonar}"!="Y" && "${env.fortify}"!="Y") {
+					env.mailbody = "Both Sonar Analysis and Fortify Analysis are skipped for this build because ${env.sonardesc} and ${env.fortifydesc} \nFor more info please visit below url\n${env.BUILD_URL}\nThanks"
+				}
+				if("${env.sonar}"!="Y") {
+					env.mailbody = "Skipped Sonar Analysis Result because ${env.sonardesc} \nFor more info please visit below url\n${env.BUILD_URL}\nThanks"
+				}
+				else if("${env.fortify}"!="Y" && "${env.sonar}"=="Y") {
+					env.mailbody = "Skipped Fortify Analysis because ${env.fortifydesc} \nFor more info please visit below url\n${env.BUILD_URL}\nThanks"
+				}
+				else {
+					env.mailbody = "For more info please visit below url\n${env.BUILD_URL}\nThanks"
+				}
+
+				def emailRecipient = "bala.guduri@connectyourcare.com;Surya.Reddy@connectyourcare.com"
+				if(env.error !=  null){
+					def body = "${env.error} \n ${env.mailbody}"
+					sendMail(emailRecipient,"$params.reponame Build Failed.  Branch: $branch",body)
+					echo "--------------------------------"
+					echo "Exiting after sending the mail"
+					echo "--------------------------------"
+					sh "exit 1"
+				}
+				def body = "${env.mailbody}"
+				sendMail(emailRecipient,"$params.reponame Build Succeeded.  Branch: $branch",body)
+			}
+		}
+	}
+}
+
+def mvnBuild(){
+	configFileProvider([configFile(fileId: '1880060f-32be-4888-a77d-eb046cab6981', variable: 'MAVEN_SETTINGS')]) {
+		if("${params.reponame}"=="ediinvoker-lambda") {
+			sh "aws s3 cp s3://cyc-repository/cycmfmbuild/microservices/$params.env/$params.reponame/application.secret.json ./src/main/resources/application.secret.json"
+		}
+		if("${env.test}"=="Y") {
+			sh "/jenkins_new/jenkins/home/tools/hudson.tasks.Maven_MavenInstallation/Maven_3.5.0/bin/mvn -s $MAVEN_SETTINGS clean install"
+		}
+		else {
+			sh "/jenkins_new/jenkins/home/tools/hudson.tasks.Maven_MavenInstallation/Maven_3.5.0/bin/mvn -s $MAVEN_SETTINGS clean install -DskipTests"
+		}
+	}
+}
+
+def nodeBuild(){
+	sh 'sed -i " 1 s/.*/&${tag}/" cycansible/cyc-mfm-microservices/${version}/Dockerfile'
+	sh "cp cycansible/cyc-mfm-microservices/${version}/Dockerfile $params.reponame/"
+    sh "cp cycansible/cyc-mfm-microservices/${version}/start_microservice.sh $params.reponame/"
+    sh "mkdir -p $params.reponame/keys"
+    dir("$params.reponame"){
+		ecsRepositoryName = "cycmfm$params.reponame"
+		sh 'DOCKER_LOGIN=$(aws ecr get-login --no-include-email --region us-east-1 | sed "s|https://||") && $DOCKER_LOGIN'
+		if("$params.reponame" == "client"){
+			sh "docker build --build-arg service=client --force-rm -t cycmfm${ecrrepo} ."
+		}
+		else {
+			sh "docker build --force-rm -t cycmfm${ecrrepo} ."
+		}
+    }
+}
+
+def lmdnodeBuild(){
+	dir("$params.reponame"){
+		if ("$params.reponame" == "dynamoDBstreamStaging"){
+			sh "rm -f ./config/application.secret.json"
+			sh "aws s3 cp s3://cyc-repository/cycmfmbuild/microservices/${environment}/$params.reponame/application.secret.json ./config/application.secret.json"
+		}
+		sh "rm -rf '$params.reponame'.zip"
+		sh "ls -al"
+		sh "zip -r '$params.reponame'.zip *"
+		sh "ls"
+	}
+}
+
+def javasonarAnalysis(){
+	withSonarQubeEnv('Sonarqube 6.7') {
+	    sh "/jenkins_new/jenkins/home/tools/hudson.plugins.sonar.SonarRunnerInstallation/Jenkins_SonarQube_Scanner/bin/sonar-scanner -e -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.projectName=$params.reponame -Dsonar.projectVersion=1.0 -Dsonar.projectKey=$params.reponame -Dsonar.java.source=1.8 -Dsonar.java.binaries=target/classes -Dsonar.sources=src/main/java"
+	}
+}
+
+def nodesonarAnalysis(){
+	withSonarQubeEnv('Sonarqube 6.7') {
+	    sh "/jenkins_new/jenkins/home/tools/hudson.plugins.sonar.SonarRunnerInstallation/Jenkins_SonarQube_Scanner/bin/sonar-scanner -e -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.projectName=$params.reponame -Dsonar.projectVersion=1.0 -Dsonar.projectKey=$params.reponame -Dsonar.java.source=1.8 -Dsonar.sources=. -Dsonar.css.node=. -Dsonar.exclusions=node_modules/**"
+	}
+}
+
+def qualitygate(){
+	sleep(30)
+    timeout (time: 2, unit: 'MINUTES') {
+        qualitygate = waitForQualityGate()
+		if (qualitygate.status != "OK") {
+			echo "quality gate failed"
+			error "Pipeline aborted due to quality gate failure: ${qualitygate.status}"
+		}
+	}
+}
+
+def fortifyscan(){
+	//fodStaticAssessment bsiToken: 'eyJ0ZW5hbnRJZCI6MTkxNCwidGVuYW50Q29kZSI6ImNvbm5lY3R5b3VyY2FyZSIsInJlbGVhc2VJZCI6MjM0NjczLCJwYXlsb2FkVHlwZSI6IkFOQUxZU0lTX1BBWUxPQUQiLCJhc3Nlc3NtZW50VHlwZUlkIjoyNzQsInRlY2hub2xvZ3lUeXBlIjoiSkFWQS9KMkVFIiwidGVjaG5vbG9neVR5cGVJZCI6NywidGVjaG5vbG9neVZlcnNpb24iOiIxLjgiLCJ0ZWNobm9sb2d5VmVyc2lvbklkIjoxMiwiYXVkaXRQcmVmZXJlbmNlIjoiQXV0b21hdGVkIiwiYXVkaXRQcmVmZXJlbmNlSWQiOjIsImluY2x1ZGVUaGlyZFBhcnR5IjpmYWxzZSwiaW5jbHVkZU9wZW5Tb3VyY2VBbmFseXNpcyI6ZmFsc2UsInBvcnRhbFVyaSI6Imh0dHBzOi8vYW1zLmZvcnRpZnkuY29tIiwiYXBpVXJpIjoiaHR0cHM6Ly9hcGkuYW1zLmZvcnRpZnkuY29tIiwic2NhblByZWZlcmVuY2UiOiJTdGFuZGFyZCIsInNjYW5QcmVmZXJlbmNlSWQiOjF9', entitlementPreference: 'SubscriptionFirstThenSingleScan', inProgressScanActionType: 'DoNotStartScan', personalAccessToken: 'FortifyAppsecret', remediationScanPreferenceType: 'RemediationScanIfAvailable', srcLocation: 'target\\fortify', tenantId: '', username: ''
+	fodStaticAssessment bsiToken: "${fortifytoken}", entitlementPreference: 'SubscriptionFirstThenSingleScan', inProgressScanActionType: 'DoNotStartScan', personalAccessToken: 'FortifyAppsecret', remediationScanPreferenceType: 'RemediationScanIfAvailable', srcLocation: 'target\\fortify', tenantId: '', username: ''
+}
+
+def fortifyresults(){
+	fodPollResults bsiToken: 'eyJ0ZW5hbnRJZCI6MTkxNCwidGVuYW50Q29kZSI6ImNvbm5lY3R5b3VyY2FyZSIsInJlbGVhc2VJZCI6MjM0NjczLCJwYXlsb2FkVHlwZSI6IkFOQUxZU0lTX1BBWUxPQUQiLCJhc3Nlc3NtZW50VHlwZUlkIjoyNzQsInRlY2hub2xvZ3lUeXBlIjoiSkFWQS9KMkVFIiwidGVjaG5vbG9neVR5cGVJZCI6NywidGVjaG5vbG9neVZlcnNpb24iOiIxLjgiLCJ0ZWNobm9sb2d5VmVyc2lvbklkIjoxMiwiYXVkaXRQcmVmZXJlbmNlIjoiQXV0b21hdGVkIiwiYXVkaXRQcmVmZXJlbmNlSWQiOjIsImluY2x1ZGVUaGlyZFBhcnR5IjpmYWxzZSwiaW5jbHVkZU9wZW5Tb3VyY2VBbmFseXNpcyI6ZmFsc2UsInBvcnRhbFVyaSI6Imh0dHBzOi8vYW1zLmZvcnRpZnkuY29tIiwiYXBpVXJpIjoiaHR0cHM6Ly9hcGkuYW1zLmZvcnRpZnkuY29tIiwic2NhblByZWZlcmVuY2UiOiJTdGFuZGFyZCIsInNjYW5QcmVmZXJlbmNlSWQiOjF9', personalAccessToken: 'FortifyAppsecret', pollingInterval: 60, tenantId: '', username: ''
+}
+
+def deleteTempImage(envTag){
+	sh "docker rmi -f $params.reponame"
+	sh "docker rmi -f ${ECRURL}/cycmfm${ecrrepo}:Build_${BUILD_ID}"
+	sh "docker rmi -f ${ECRURL}/cycmfm${ecrrepo}:${envTag}"
+}
+
+def buildAndPushImage(mainTag,buildTag){
+	if (fileExists("$params.reponame/target/microservice-exec.jar")) {
+		sh "rm -f cycansible/cyc-mfm-microservices/${version}/microservice-exec.jar"
+		sh "cp $params.reponame/target/microservice-exec.jar cycansible/cyc-mfm-microservices/${version}"
+	}
+	else{
+		sh "rm -f cycansible/cyc-mfm-microservices/${version}/${artifact}"
+		sh "cp $params.reponame/target/${artifact} cycansible/cyc-mfm-microservices/${version}"
+	}
+	sh 'sed -i " 1 s/.*/&${tag}/" cycansible/cyc-mfm-microservices/${version}/Dockerfile'
+	sh 'DOCKER_LOGIN=$(aws ecr get-login --no-include-email --region us-east-1 | sed "s|https://||") && $DOCKER_LOGIN'
+	sh "docker build --force-rm -t $params.reponame cycansible/cyc-mfm-microservices/${version}"
+	sh "docker tag $params.reponame ${ECRURL}/cycmfm${ecrrepo}:${mainTag}"
+	sh "docker push ${ECRURL}/cycmfm${ecrrepo}:${mainTag}"
+	sh "docker tag $params.reponame ${ECRURL}/cycmfm${ecrrepo}:${buildTag}"
+	sh "docker push ${ECRURL}/cycmfm${ecrrepo}:${buildTag}"
+}
+
+def PushImage(mainTag,buildTag){
+	sh "docker tag cycmfm${ecrrepo} ${ECRURL}/cycmfm${ecrrepo}:${mainTag}"
+	sh "docker push ${ECRURL}/cycmfm${ecrrepo}:${mainTag}"
+	sh "docker tag cycmfm${ecrrepo} ${ECRURL}/cycmfm${ecrrepo}:${buildTag}"
+	sh "docker push ${ECRURL}/cycmfm${ecrrepo}:${buildTag}"
+
+}
+
+def uploadPropForSecreteMgr(env){
+	def pathOfs3 = "cycmfmbuild/microservices/${env}/${s3folder}"
+	echo "Uploading to S3 for the Application-${env}.properties"
+    sh "aws s3 cp s3://cyc-repository/${pathOfs3}/application.properties src/main/resources/application.properties.bkp"
+	s3Upload acl: 'Private', bucket: 'cyc-repository', cacheControl: '',  file: "src/main/resources/application.properties.bkp", metadatas: [''], path: "${pathOfs3}/application.properties.bkp", sseAlgorithm: 'AES256', workingDir: ''
+	s3Upload acl: 'Private', bucket: 'cyc-repository', cacheControl: '',  file: "${params.reponame}/src/main/resources/application-${env}.properties", metadatas: [''], path: "${pathOfs3}/application.properties", sseAlgorithm: 'AES256', workingDir: ''
+	echo "Uploaded to S3 for the Application-${env}.properties"
+}
+
+def uploadPropconfig(env){
+	def pathOfs3 = "cycmfmbuild/microservices/${env}/${s3folder}"
+	echo "Uploading to S3 for the Application-${env}.properties"
+	sh "aws s3 cp s3://cyc-repository/${pathOfs3}/AwsConfig.json ./AwsConfig.json.bkp"
+	sh "aws s3 cp ${params.reponame}/config/AwsConfig.json s3://cyc-repository/${pathOfs3}/AwsConfig.json --sse"
+	sh "aws s3 cp ./AwsConfig.json.bkp s3://cyc-repository/${pathOfs3}/AwsConfig.json.bkp --sse"
+}
+
+def sendMail(emailRecipient,subject,body){
+	emailext attachLog: true, attachmentsPattern: 'build.log', body: body, replyTo: '', subject: "${subject}: Job ${env.JOB_NAME}", to: emailRecipient
+}
+
+def updateLambdaFunction(key){
+    // sh "aws lambda update-function-code --function-name cyc-${params.env}-mfm-${params.reponame} --s3-bucket cyc-repository --s3-key ${key}"
+}

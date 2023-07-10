@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description:  This is MFM Template for Staging for CYC DynamoDB Audit Trail
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+Conditions: 
+    PRD: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], prd]
+    MO: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], mo]
+    STG: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], stg]
+    PRDB: !Or   
+      - Condition: MO
+      - Condition: STG
+Resources:
+  DynamoDBTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: 'id'
+          AttributeType: 'N'
+        -
+          AttributeName: 'scheduleRunId'
+          AttributeType: 'N'
+     
+      KeySchema:
+        -
+          AttributeName: 'scheduleRunId'
+          KeyType: HASH
+        -
+          AttributeName: 'id'
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      TableName: !Join ['_',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], Audit, Trail]]
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      SSESpecification: 
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: False
+      Tags:
+        - Key: Name
+          Value: !Join ['_',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], Audit, Trail]]
+        - Key: Owner
+          Value: "Sree G"
+        - Key: Purpose
+          Value: "This is where we record information about steps taken per schedule run and associated with interface id. So we tell what steps an interface has seen and order it by schedule id"     
+        - Key: BackupPlan
+          Value: !If [PRD, PlanA, !If [PRDB, PlanB, PlanC ]] 
+Outputs:
+  TableARN:
+    Description: Dynamo Table ARN value
+    Value: !GetAtt [DynamoDBTable,Arn]
+    Export: 
+        Name: !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], Audit, Trail, DynamoDBTable, id]]
+  TableStreamARN:
+    Description: Dynamo Table StreamArn value
+    Value: !GetAtt [DynamoDBTable,StreamArn]
+    Export: 
+        Name: !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], Audit, Trail, DynamoDBStream, id]]

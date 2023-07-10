@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating Healthy host count alarm for MFM Environment
+
+Transform:
+  Name: 'AWS::Include'
+  Parameters: 
+    Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions: 
+    DEV: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], dev]
+    PRD: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], prd]
+
+Resources:  
+
+    cycecsclientalarm: 
+        Type: 'AWS::CloudFormation::Stack'
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, canalr]
+            Parameters: 
+                AAction1: !Join ['', ['arn:aws:sns:', !Ref "AWS::Region", ':', !Ref "AWS::AccountId", ':', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-core-notification']]
+                ADesc: !Join ['', [!FindInMap [Infra, !Ref "AWS::AccountId", Name], 'Alarm to trigger when there are less then 2 running containers for the last 30 minutes']]
+                AName: !Join ['-', [!FindInMap [Infra, !Ref "AWS::AccountId", Name], client, ecs]]
+                COptor: LessThanThreshold
+                EVperiod: 1
+                MName: HealthyHostCount
+                NSpace: AWS/ApplicationELB
+                Period: 1800
+                Statistic: Maximum
+                Treshold: 
+                  !If
+                    -  DEV
+                    -  1 
+                    -  2                    
+                DPToAlarm: 1
+                DName1: TargetGroup
+                DValue1: !FindInMap [Infra, !Ref "AWS::AccountId", alarmtg]
+                DName2: LoadBalancer
+                DValue2: !FindInMap [Infra, !Ref "AWS::AccountId", alarmalb]
+                TMD: missing

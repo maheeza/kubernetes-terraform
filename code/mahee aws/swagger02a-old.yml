@@ -1,0 +1,126 @@
+---
+swagger: "2.0"
+info:
+  version: "2019-09-23T15:08:30Z"
+  title: "ctc-nbt-api-gateway"
+host: nbtapi.execute-api.us-east-1.amazonaws.com"
+basePath: "/cyc"
+schemes:
+- "https"
+paths:
+
+  /tax-center/tax-form-download/{filename}:
+    get:
+      parameters:
+      - name: "filename"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+        type: "string"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+      x-amazon-apigateway-integration:
+        type: "http_proxy"
+        uri: "https://${stageVariables.cycavar7}/tax-center/tax-form-download/{filename}"
+        responses:
+          default:
+            statusCode: "200"
+        requestParameters:
+          integration.request.path.filename: "method.request.path.filename"
+        passthroughBehavior: "when_no_match"
+        connectionType: "VPC_LINK"
+        connectionId: "${stageVariables.vpcLinkId}"
+        httpMethod: "GET"
+    options:
+      consumes:
+      - "application/json"
+      - "application/json;charset=UTF-8"
+      produces:
+      - "application/json"
+      - "application/json;charset=UTF-8"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        type: "mock"
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS,PUT,POST'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,data-user-id,x-api-version'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        passthroughBehavior: "when_no_match"
+        
+definitions:
+  Empty:
+    type: "object"
+    title: "Empty Schema"
+x-amazon-apigateway-gateway-responses:
+  ACCESS_DENIED:
+    statusCode: 403
+    responseTemplates:
+      application/json: "{\"CYC FORBIDDEN Message\":\"We are sorry, Your request cannot\
+        \ be processed at this time... Please contact Support\"}"
+  INVALID_SIGNATURE:
+    statusCode: 403
+    responseTemplates:
+      application/json: "{\"CYC-ErrorMessage-IV-3\":$context.error.messageString}"
+  DEFAULT_5XX:
+    responseTemplates:
+      application/json: "{\"CYC-ErrorMessage-V\":$context.error.messageString}"
+  MISSING_AUTHENTICATION_TOKEN:
+    statusCode: 403
+    responseTemplates:
+      application/json: "{\"CYC-ErrorMessage-IV-4\":$context.error.messageString}"
+  EXPIRED_TOKEN:
+    statusCode: 403
+    responseTemplates:
+      application/json: "{\"CYC-ErrorMessage-IV-1\":$context.error.messageString}"
+  INVALID_API_KEY:
+    statusCode: 403
+    responseTemplates:
+      application/json: "{\"CYC-ErrorMessage-IV-2\":$context.error.messageString}"
+  DEFAULT_4XX:
+    responseTemplates:
+      application/json: "{\"CYC-ErrorMessage-IV\":$context.error.messageString}"
+  WAF_FILTERED:
+    statusCode: 403
+    responseTemplates:
+      application/json: "{\"CYC-ErrorMessage-IV-5\":$context.error.messageString}"
+x-amazon-apigateway-policy:
+  Version: "2012-10-17"
+  Statement:
+  - Effect: "Deny"
+    Principal: "*"
+    Action: "execute-api:Invoke"
+    Resource: "arn:aws:execute-api:us-east-1:${AWS::AccountId}:*/*/*/*"
+    Condition:
+      StringNotEquals:
+        aws:sourceVpce:
+        - "vpce-017cc8211fdd4bb96"
+        - "vpce-043430d8c42320c6b"
+  - Effect: "Allow"
+    Principal: "*"
+    Action: "execute-api:Invoke"
+    Resource: "arn:aws:execute-api:us-east-1:${AWS::AccountId}:*/*/*/*"
+x-amazon-apigateway-binary-media-types:
+- "multipart/form-data"

@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:  CYC S3 stack for MFM
+
+Transform:
+  Name: 'AWS::Include'
+  Parameters:
+    Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions:
+  zonea:  !Equals [ !FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc ]
+  zoneb:  !Equals [ !FindInMap [Infra, !Ref "AWS::AccountId", AvZone], !Ref "AWS::Region"]
+  zone1:  !And
+    - Condition:  zonea
+    - Condition:  zoneb
+
+Resources:
+  cycadminpucket:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition:  zone1
+    Properties:
+      TemplateURL: !FindInMap [Infra, Global, S3]
+      Parameters:
+        Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+        Vpcid: !FindInMap [Infra, !Ref "AWS::AccountId", Vpcid]
+        Bsuff: admin01
+        Accid: !FindInMap [Infra, !Ref "AWS::AccountId", Accid]
+        Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+
+Outputs:
+
+  cycadminpucketid:
+    Description: Fn::Join ["-", ['Stack ID for', !FindInMap [Infra, !Ref "AWS::AccountId", Disc], ' for Web traffic']]
+    Condition:  zone1
+    Value: !Ref cycadminpucket
+    Export:
+      Name: !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], s3, for, admin01 ,id]]

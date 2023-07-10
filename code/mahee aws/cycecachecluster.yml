@@ -1,0 +1,336 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description:  This is Globla Template for CYC Elasti Cache Cluster
+
+Parameters:
+
+  Envr:
+    Description: Enter the Environment Information please cyc-dev-ec-infra
+    Type: String
+    
+  Desc:
+    Description: Give the description for Cache Cluster
+    Type: String
+    
+  Owner:
+    Description: Owner of the project
+    Type: String
+  
+  CPGF:
+    Description: Select the type of the cache parameter group family (Redis or Memcached).
+    Type: String
+    Default: 'redis5.0'
+    AllowedValues: [redis5.0, memcached1.5]
+    
+#  DescParmGroup:
+#    Description: Description for the cache parameter group family.
+#    Type: String
+    
+#  PGFName:
+#    Description: Name for the cache parameter group family.
+#    Type: String
+    
+  SubnetGroupName:
+    Description: Name of the Cache Subnet Group Name
+    Type: String
+    
+  SubID1:
+    Description: 'Subnet ID for Cache Subnet Group Name [comma separated values for multiple Security Group]'
+    Type: String
+    Default: 'no-Value'
+    
+  RestEncryption:
+    Description: Select true if encryption at rest is needed
+    Type: String
+    Default: false
+    AllowedValues: [true, false]
+    
+  AuthToken:
+    Description: AuthToken can be specified only on replication groups where TransitEncryptionEnabled is true 
+    Type: String
+    Default: 'no-Value'
+    
+  FailoverEnabled:
+    Description: AutomaticFailoverEnabled must be enabled for Redis (cluster mode enabled) replication groups
+    Type: String
+    Default: false
+    AllowedValues: [true, false]
+    
+  MinorVersionUpgrade:
+    Description: Select True if Automatic MinorVersion Upgrade is required (currently disabled)
+    Type: String
+    Default: false
+    AllowedValues: [true, false]
+    
+  CacheNodeType:
+    Description: Give the type of the Cache node like cache.r3.large, cache.m2.xlarge, cache.t2.micro
+    Type: String
+    Default: 'no-Value'
+  
+  SecGName1:
+    Description: 'The name(s) of the Cache security groups [comma separated values for multiple Security Group]'
+    Type: String
+    Default: 'no-Value'
+    
+  Engine:
+    Description: Select the type of engine
+    Type: String
+    Default: 'no-Value'
+    AllowedValues: [memcached, redis, 'no-Value']
+    
+  EngineVersion:
+    Description: Give the engine version
+    Type: String
+    Default: 'no-Value'
+    
+  KmsKeyId:
+    Description: Give the ID of the KMS Key
+    Type: String
+    Default: 'no-Value'
+    
+  NodeGroupId:
+    Description: Give the ID for the Node Group (The ElastiCache for Redis supplied 4-digit id)
+    Type: String
+    Default: 'no-Value'
+    
+  PrimaryAZ:
+    Description: The Availability Zone where the primary node of this node group (shard) is launched
+    Type: String
+    Default: 'no-Value'
+    
+  ReplicaAZ1:
+    Description: 'A list of Availability Zones to be used for the read replicas (must match the value of ReplicaCount or ReplicasPerNodeGroup) [comma separated values for multiple groups]'
+    Type: String
+    Default: 'no-Value'
+    
+  ReplicaCount:
+    Description: The number of read replica nodes in this node group (shard)
+    Type: String
+    Default: 'no-Value'
+    
+  Slots:
+    Description: A string of comma-separated values where the first set of values are the slot numbers (zero based)
+    Type: String
+    Default: 'no-Value'
+    
+  NotificationTopicArn:
+    Description: Give the ARN of the Notification Topic
+    Type: String
+    Default: 'no-Value'
+    
+  NumCacheClusters:
+    Description: The number of clusters this replication group initially has
+    Type: String
+    Default: 'no-Value'
+    
+  NumNodeGroups:
+    Description: The number of node groups (shards) for this Redis (cluster mode enabled) replication group
+    Type: String
+    Default: 'no-Value'
+    
+  Port:
+    Description: Give the port number for the cache cluster
+    Type: String
+    Default: 'no-Value'
+    
+  PrefCacheClusterAZs1:
+    Description: 'Give the Availability Zones for Cache Cluster (must equal the value of NumCacheClusters) [comma separated values for multiple AV zones]'
+    Type: String
+    Default: 'no-Value'
+  
+  MaintenanceWindow:
+    Description: Give the availability zones for the cache cluster based on cache nodes count
+    Type: String
+    Default: 'no-Value'
+    
+  PrimaryClusterId:
+    Description: The primary cluster id for this replication group (This parameter is not required if NumCacheClusters, NumNodeGroups, or ReplicasPerNodeGroup is specified)
+    Type: String
+    Default: 'no-Value'
+    
+  ReplicasPerNodeGroup:
+    Description: The number of replica nodes in each node group (shard). Valid values are 0 to 5
+    Type: String
+    Default: 'no-Value'
+    
+  ReplicationGroupDesc:
+    Description: A user-created description for the replication group
+    Type: String
+    
+  ReplicationGroupId:
+    Description: The replication group identifier. This parameter is stored as a lowercase string
+    Type: String
+    Default: 'no-Value'
+    
+  SGID1:
+    Description: 'Provide VPC Security Group IDs for Replication Group [comma separated values for multiple groups]'
+    Type: String
+    Default: 'no-Value'
+   
+  MultiAZEnabled:
+    Description: 'Multi Zone Enabled?'
+    Type: String
+    Default: 'true'
+    AllowedValues:  
+      - 'false'
+      - 'true'
+      
+  SnapshotArn1:
+    Description: 'Give the ARN of Snapshot [comma separated values for multiple snapshot]'
+    Type: String
+    Default: 'no-Value'
+    
+    
+  SnapshotName:
+    Description: Give the Name of Snapshot (valid only for redis engine)
+    Type: String
+    Default: 'no-Value'
+    
+  SnapshotRetentionLimit:
+    Description: Give the Name of Snapshot Retention Limit (valid only for redis engine)
+    Type: String
+    Default: 'no-Value'
+    
+  SnapshotWindow:
+    Description: Give the Name of Snapshot Retention Limit (valid only for redis engine)
+    Type: String
+    Default: 'no-Value'
+    
+  SnapshottingClusterId:
+    Description: The daily snapshot source for the replication group. This parameter cannot be set for Redis (cluster mode enabled) replication groups
+    Type: String
+    Default: 'no-Value'
+    
+  TransitEncryption:
+    Description: (For HIPAA compliance, you must specify TransitEncryptionEnabled as true, an AuthToken, and a CacheSubnetGroup)
+    Type: String
+    Default: false
+    AllowedValues: [true, false]
+    
+  CYCElastiCacheParameter:
+    Description: Give the parameter group name
+    Type: String
+
+   
+Conditions:
+  SID1: !Not [!Equals [ !Ref SubID1, 'no-Value']]
+  AT: !Not [!Equals [ !Ref AuthToken, 'no-Value']]
+  CNT: !Not [!Equals [ !Ref CacheNodeType, 'no-Value']]
+  SGN1: !Not [!Equals [ !Ref SecGName1, 'no-Value']]
+  Eng: !Not [!Equals [ !Ref Engine, 'no-Value']]
+  EngV: !Not [!Equals [ !Ref EngineVersion, 'no-Value']]
+  KMS: !Not [!Equals [ !Ref KmsKeyId, 'no-Value']]
+  NGId: !Not [!Equals [ !Ref NodeGroupId, 'no-Value']]
+  PAZ: !Not [!Equals [ !Ref PrimaryAZ, 'no-Value']]
+  RAZ1: !Not [!Equals [ !Ref ReplicaAZ1, 'no-Value']]
+  RC: !Not [!Equals [ !Ref ReplicaCount, 'no-Value']]
+  Slot: !Not [!Equals [ !Ref Slots, 'no-Value']]
+  NTA: !Not [!Equals [ !Ref NotificationTopicArn, 'no-Value']]
+  NCC: !Not [!Equals [ !Ref NumCacheClusters, 'no-Value']]
+  NNG: !Not [!Equals [ !Ref NumNodeGroups, 'no-Value']]
+  Port: !Not [!Equals [ !Ref Port, 'no-Value']]
+  PCCAZ1: !Not [!Equals [ !Ref PrefCacheClusterAZs1, 'no-Value']]
+  MW: !Not [!Equals [ !Ref MaintenanceWindow, 'no-Value']]
+  PCI: !Not [!Equals [ !Ref PrimaryClusterId, 'no-Value']]
+  RPNG: !Not [!Equals [ !Ref ReplicasPerNodeGroup, 'no-Value']]
+  RGID: !Not [!Equals [ !Ref ReplicationGroupId, 'no-Value']]
+  SA1: !Not [!Equals [ !Ref SnapshotArn1, 'no-Value']]
+  SN: !Not [!Equals [ !Ref SnapshotName, 'no-Value']]
+  SRL: !Not [!Equals [ !Ref SnapshotRetentionLimit, 'no-Value']]
+  SCID: !Not [!Equals [ !Ref SnapshottingClusterId, 'no-Value']]
+  SW: !Not [!Equals [ !Ref SnapshotWindow, 'no-Value']]
+  
+
+Resources:
+  CYCElastiCacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      CacheSubnetGroupName: !Join ['-',[!Ref Envr, !Ref SubnetGroupName]]
+      Description: !Join ['-',[!Ref Envr, !Ref Desc]]
+      SubnetIds: !If [SID1, !Split [',', !Ref SubID1], !Ref 'AWS::NoValue']
+   
+  CYCElastiCacheReplicationGroup:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties: 
+      AtRestEncryptionEnabled: !Ref RestEncryption
+      AuthToken: !If [AT, !Ref AuthToken, !Ref 'AWS::NoValue']
+      AutomaticFailoverEnabled: !Ref FailoverEnabled
+      AutoMinorVersionUpgrade: !Ref MinorVersionUpgrade
+      CacheNodeType: !If [CNT, !Ref CacheNodeType, !Ref 'AWS::NoValue']
+      CacheParameterGroupName: !Ref CYCElastiCacheParameter
+      CacheSecurityGroupNames: !If [SGN1, !Split [",", !Ref SecGName1], !Ref 'AWS::NoValue']
+      CacheSubnetGroupName: !Ref CYCElastiCacheSubnetGroup
+      Engine: !If [Eng, !Ref Engine, !Ref 'AWS::NoValue']
+      EngineVersion: !If [EngV, !Ref EngineVersion, !Ref 'AWS::NoValue']
+      KmsKeyId: !If [KMS, !Ref KmsKeyId, !Ref 'AWS::NoValue']
+      MultiAZEnabled: !Ref MultiAZEnabled
+      NodeGroupConfiguration: 
+        - NodeGroupId: !If [NGId, !Ref NodeGroupId, !Ref 'AWS::NoValue']
+          PrimaryAvailabilityZone: !If [PAZ, !Ref PrimaryAZ, !Ref 'AWS::NoValue']
+          ReplicaAvailabilityZones: !If [RAZ1, !Split [",", !Ref ReplicaAZ1], !Ref 'AWS::NoValue']
+          ReplicaCount: !If [RC, !Ref ReplicaCount, !Ref 'AWS::NoValue']
+          Slots: !If [Slot, !Ref Slots, !Ref 'AWS::NoValue']
+      NotificationTopicArn: !If [NTA, !Ref NotificationTopicArn, !Ref 'AWS::NoValue']
+      NumCacheClusters: !If [NCC, !Ref NumCacheClusters, !Ref 'AWS::NoValue']
+      NumNodeGroups: !If [NNG, !Ref NumNodeGroups, !Ref 'AWS::NoValue']
+      Port: !If [Port, !Ref Port, !Ref 'AWS::NoValue']
+      PreferredCacheClusterAZs: !If [PCCAZ1, !Split [",", !Ref PrefCacheClusterAZs1], !Ref 'AWS::NoValue']
+      PreferredMaintenanceWindow: !If [MW, !Ref MaintenanceWindow, !Ref 'AWS::NoValue']
+      PrimaryClusterId: !If [PCI, !Ref PrimaryClusterId, !Ref 'AWS::NoValue']
+      ReplicasPerNodeGroup: !If [RPNG, !Ref ReplicasPerNodeGroup, !Ref 'AWS::NoValue']
+      ReplicationGroupDescription: !Ref ReplicationGroupDesc
+      ReplicationGroupId: !If [RGID, !Join ["-",[!Ref Envr, !Ref ReplicationGroupId]], !Ref 'AWS::NoValue']
+      SecurityGroupIds: !Split [",", !Ref SGID1]
+      SnapshotArns: !If [SA1, !Split [",", !Ref SnapshotArn1], !Ref 'AWS::NoValue']
+      SnapshotName: !If [SN, !Ref SnapshotName, !Ref 'AWS::NoValue']
+      SnapshotRetentionLimit: !If [SRL, !Ref SnapshotRetentionLimit, !Ref 'AWS::NoValue']
+      SnapshottingClusterId: !If [SCID, !Ref SnapshottingClusterId, !Ref 'AWS::NoValue']
+      SnapshotWindow: !If [SW, !Ref SnapshotWindow, !Ref 'AWS::NoValue']
+      Tags: 
+        - 
+          Key: Environment
+          Value: !Ref Envr
+        - 
+          Key: Owner
+          Value: !Ref Owner
+        - 
+          Key: Purpose
+          Value: !Join ['-',[!Ref Envr, Elastice, Cache]]
+      TransitEncryptionEnabled: !Ref TransitEncryption
+
+Outputs:
+
+  CYCElastiCacheRGroupCP:
+    Description: Redis Configuration End Point Output
+    Value: !GetAtt [CYCElastiCacheReplicationGroup, ConfigurationEndPoint.Address]
+    Export: 
+      Name: !Join ["-",[!Ref Envr, !Ref ReplicationGroupId, redis, ConfigEndPoint]]
+
+  CYCElastiCacheRGroupCPP:
+    Description: Redis Configuration End Point Port Output
+    Value: !GetAtt [CYCElastiCacheReplicationGroup, ConfigurationEndPoint.Port]
+    Export: 
+      Name: !Join ["-",[!Ref Envr, !Ref ReplicationGroupId, redis, ConfigEndPointPorts]]  
+
+#  CYCElastiCacheRGroupPP:
+#    Description: Redis Primary End Point Output
+#    Value: !GetAtt [CYCElastiCacheReplicationGroup, PrimaryEndPoint.Address]
+#    Export: 
+#      Name: !Join ["-",[!Ref Envr, !Ref ReplicationGroupId, redis, PrimaryEndPoint]]
+
+#  CYCElastiCacheRGroupPPP:
+#    Description: Redis Primary End Point Port Output
+#    Value: !GetAtt [CYCElastiCacheReplicationGroup, PrimaryEndPoint.Port]
+#    Export: 
+#      Name: !Join ["-",[!Ref Envr, !Ref ReplicationGroupId, redis, PrimaryEndPointPorts]]      
+
+#  CYCElastiCacheRGroupRP:
+#    Description: Redis Read End Point Output
+#    Value: !GetAtt [CYCElastiCacheReplicationGroup, ReadEndPoint.Addresses]
+#    Export: 
+#      Name: !Join ["-",[!Ref Envr, !Ref ReplicationGroupId, redis, ReadEndPoint]]
+
+#  CYCElastiCacheRGroupRPP:
+#    Description: Redis Read End Point Port Output
+#    Value: !GetAtt [CYCElastiCacheReplicationGroup, ReadEndPoint.Ports]
+#    Export: 
+#      Name: !Join ["-",[!Ref Envr, !Ref ReplicationGroupId, redis, ReadEndPointPorts]]

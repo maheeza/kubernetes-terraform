@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create Devops ECS Cluster
+
+Parameters:
+
+  clusterName: 
+    Description: Cluster Name
+    Type: String
+  Owner: 
+    Description: Owner Name
+    Type: String
+
+Resources:
+    cycecscluster:
+      Type: AWS::ECS::Cluster
+      Properties: 
+        ClusterName: !Ref clusterName
+        Tags: 
+          - 
+            Key: Environment
+            Value: !Join ["-",[!Ref clusterName, '01']]
+          - 
+            Key: Name
+            Value: !Join ["-",[!Ref clusterName, '01']]
+          - 
+            Key: Owner
+            Value: !Ref Owner
+
+Outputs:
+
+    cyctg01:
+        Description: ECS Cluster ID value
+        Value: !Ref cycecscluster
+        Export: 
+            Name: !Join ["-",[!Ref clusterName, 'csid']]             

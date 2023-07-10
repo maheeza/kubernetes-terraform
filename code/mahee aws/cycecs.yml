@@ -1,0 +1,365 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "This template is Version 2.0 designed for CYC ECS Deployment"
+Parameters:
+    Envr:
+        Description: 'Environment Value please'
+        Type: String
+
+    Srvname:
+        Description: 'Service for Deployment'
+        Type: String
+
+    Memory:
+        Description: 'Memory for the Service'
+        Type: String
+        Default: '256'
+
+    Cpu:
+        Description: 'Cpu for the Service'
+        Type: String
+        Default: '256'
+
+    ContainerPort:
+        Description: 'Container Port for the Service'
+        Type: String
+
+#    Xport:
+#        Description: 'X-Ray Port for the Service'
+#        Default: '11160'
+#        Type: String
+
+    DesiredCapacity:
+        Description: 'Desired Count for Scaling Target'
+        Type: String
+        Default: '1'
+
+    MaxSize:
+        Description: 'Max number for Autoscaling'
+        Type: String
+        Default: '1'
+        AllowedValues: 
+            - '1'
+            - '2'
+            - '3'
+            - '5'
+            - '10'
+
+    MinSize:
+        Description: 'Min number for Autoscaling'
+        Type: String
+        Default: '1'
+        AllowedValues: 
+        - '1'
+        - '2'
+        - '3'
+        - '5'        
+        
+    ImageARN:
+        Type: String
+        Description: 'ECS Image ARN for the Service'
+
+    ImgTag:
+        Type: String
+        Description: 'ECS Image Tag for the Service'
+
+    ScaleUpCooldown:
+        Type: String
+        Default: '60'
+        Description: 'Scale up - Cool down interval for Autoscaling policy'
+
+    ScaleUpMetricAggUpType:
+        Type: String
+        Default: Average
+        Description: 'Scale up - Metric Aggregation Type for AutoScaling policy'
+
+    ScaleUpMetricIntLowerBound:
+        Type: String
+        Default: '0'
+        Description: 'Scale up - Metric Interval LowerBound for Autoscaling policy'
+
+    ScaleUpScalingAdjustment:
+        Type: String
+        Default: '1'
+        Description: 'Scale up - Scaling Adjustment for Autoscaling policy'
+
+    ScaleUpEvaluationPeriod:
+        Type: String
+        Default: '1'
+        Description: 'Scale up - Evaluation Periods for Autoscaling policy'
+
+    ScaleUpStatistic:
+        Type: String
+        Default: Average
+        Description: 'Scale up - Statistic for Autoscaling policy'
+
+    ScaleUpThreshold:
+        Type: String
+        Default: '90'
+        Description: 'Scale up - Threshold for Autoscaling policy'
+
+    ScaleUpPeriod:
+        Type: String
+        Default: '300'
+        Description: 'Scale up - Period for Autoscaling policy'
+
+    ScaleUpMetricName:
+        Type: String
+        Default: CPUUTILIZATION
+        Description: 'Scale up - MetricName for Autoscaling policy'
+
+    ScaleDwnMetricIntUpperBound:
+        Type: String
+        Default: '-1'
+        Description: 'Scale Down - Metric Interval Upper Bound for Autoscaling policy'
+
+    ScaleDwnAdjustment:
+        Type: String
+        Default: '-1'
+        Description: 'Scale Down - Adjustment for Autoscaling policy'
+
+    ScaleDwnMetricAggDwnType:
+        Type: String
+        Default: Average
+        Description: 'Scale Down - Metric Aggregation type for Autoscaling policy'
+
+    ScaleDwnThreshold:
+        Type: String
+        Default: '50'
+        Description: 'Scale Down - Threshold for Autoscaling policy'
+
+    ScaleDwnCoolDwn:
+        Type: String
+        Default: '60'
+        Description: 'Scale Down - Coll Down for Autoscaling policy'
+
+    ScaleDwnEvaluationPeriods:
+        Type: String
+        Default: '1'
+        Description: 'Scale Down - EvaluationPeriods for Autoscaling policy'
+
+    ScaleDwnPeriod:
+        Type: String
+        Default: '60'
+        Description: "Scale Down - Period for Autoscaling policy [Must be 10, 30 or multiple\nof 60]"
+
+    LogRetention:
+        Type: String
+        Default: '14'
+        Description: "Cloud Watch Logs Retention In Days"
+
+    repoName:
+        Type: String
+
+    EnvironmentValue:
+        Type: String
+            
+    Vpcid:
+        Type: String
+
+    Subnets:
+        Type: String
+
+    Cluster:
+        Type: String
+        Default: cyccmdfg
+
+    Owner:
+        Type: String
+        Description: "Enter Owner Name Please"
+
+    TargetGroupArn: 
+        Type: String
+
+    PlatformVersion: 
+        Type: String
+        Default: '1.3.0'
+        AllowedValues:
+            - '1.2.0'
+            - '1.3.0'
+            - '1.4.0'
+            - LATEST
+
+    Sclmethod:
+        Type: String
+        Default: 'StepScaling'
+        Description: 'Autoscaling Method'
+        AllowedValues:
+            - StepScaling
+            - TargetTrackingScaling
+
+Resources:
+    CYCcoreTaskService:
+        Type: 'AWS::ECS::TaskDefinition'
+        DependsOn: 
+            - cycLogsGroup
+        Properties:
+            Family: !Join ["-", [!Ref Envr, !Ref Srvname, task]]
+            NetworkMode: awsvpc
+            ContainerDefinitions:
+                -
+                    Name: !Join ["-", [!Ref Envr, !Ref Srvname]]
+                    Image: !Join ["", [!Ref ImageARN, !Ref ImgTag]]
+                    Memory: !Ref Memory
+                    Cpu: !Ref Cpu
+                    Environment:
+#                        -   Name: "AWS_XRAY_DAEMON_ADDRESS"
+#                            Value: !Join ["", [!Ref Envr, "-", !Ref Srvname, "-service:", !Ref Xport]]
+                        -   Name: environment
+                            Value: !Ref EnvironmentValue
+                        -   Name: repoName
+                            Value: !Ref repoName
+                    PortMappings:
+                        - ContainerPort: !Ref ContainerPort
+                    LogConfiguration:
+                        LogDriver: awslogs
+                        Options:
+                            awslogs-group: !Ref cycLogsGroup
+                            awslogs-region: !Ref 'AWS::Region'
+                            awslogs-stream-prefix: !Join ["-",[ecs, !Ref Envr, !Ref Srvname]]
+                    Essential: true
+            ExecutionRoleArn: 
+                Fn::ImportValue: 
+                    !Join ["-",[!Ref Envr, devops,execution,Roleid]]               
+            RequiresCompatibilities: 
+                - FARGATE
+            Memory: !Ref Memory
+            Cpu: !Ref Cpu
+            TaskRoleArn: 
+                Fn::ImportValue: 
+                    !Join ["-",[!Ref Envr, taskrole,Roleid]] 
+            Tags: 
+            - 
+                Key: Environment
+                Value: !Join ["-",[!Ref Envr, ecs, task, !Ref Srvname]]
+            - 
+                Key: Name
+                Value: !Join ["-",[!Ref Envr, ecs, task, !Ref Srvname]]
+            - 
+                Key: Owner
+                Value: !Ref Owner
+
+    cycLogsGroup:
+        Type: AWS::Logs::LogGroup
+        Properties:
+            LogGroupName: !Join ["", ["/ecs/", !Ref Srvname, "/"]]
+            RetentionInDays: !Ref LogRetention
+
+    CYCcoreMicroService:
+        Type: 'AWS::ECS::Service'
+        Properties:
+            Cluster: !Ref Cluster
+            DesiredCount: !Ref DesiredCapacity
+            LaunchType: FARGATE
+            TaskDefinition: !Ref CYCcoreTaskService
+            PlatformVersion: !Ref PlatformVersion
+            LoadBalancers:
+            - ContainerName: !Join ["-",[!Ref Envr, !Ref Srvname]]
+              ContainerPort: !Ref ContainerPort
+              TargetGroupArn: 
+                Fn::ImportValue: 
+                    !Join ["-",[!Ref Envr, !Ref Srvname,tgid]]               
+            NetworkConfiguration:
+                AwsvpcConfiguration: 
+                    SecurityGroups:
+                        - Fn::ImportValue: 
+                            !Join ["-",[!Ref Envr, ms, sgid]] 
+                    Subnets: 
+                        - !Select [1, !Split [",", !Ref Subnets]]
+                        - !Select [0, !Split [",", !Ref Subnets]]
+            ServiceName: !Join ["-", [!Ref Envr, !Ref Srvname, service ]]
+
+    ScalingTarget:
+        Type: 'AWS::ApplicationAutoScaling::ScalableTarget'
+        DependsOn: CYCcoreMicroService
+        Properties:
+            MaxCapacity: !Ref MaxSize
+            MinCapacity: !Ref MinSize
+            ResourceId:
+                Fn::Join:
+                    - "/"
+                    -   - service
+                        -  Ref: Cluster
+                        - Fn::GetAtt:
+                            - CYCcoreMicroService
+                            - Name
+            RoleARN: !Join ["",['arn:aws:iam::', !Ref "AWS::AccountId", ':role/',!Ref Envr, '-autoscal-Roleid']]             
+            ScalableDimension: 'ecs:service:DesiredCount'
+            ServiceNamespace: ecs
+    ScaleUpPolicy:
+        Type: 'AWS::ApplicationAutoScaling::ScalingPolicy'
+        Properties:
+            PolicyName: ScaleUpPolicy
+            PolicyType: StepScaling
+            ScalingTargetId: !Ref ScalingTarget
+            StepScalingPolicyConfiguration: 
+                AdjustmentType: ChangeInCapacity
+                Cooldown: !Ref ScaleUpCooldown
+                MetricAggregationType: Average
+                StepAdjustments:
+                    -   MetricIntervalLowerBound: !Ref ScaleUpMetricIntLowerBound
+                        ScalingAdjustment: !Ref ScaleUpScalingAdjustment
+    ScaleUpAlarmCPUUtlization:
+        Type: 'AWS::CloudWatch::Alarm'
+        Properties:
+            EvaluationPeriods: !Ref ScaleUpEvaluationPeriod
+            Statistic: !Ref ScaleUpStatistic
+            Threshold: !Ref ScaleUpThreshold
+            AlarmDescription: 'Alarm if our ALB generates too many HTTP 500s.'
+            Period: !Ref ScaleUpPeriod
+            Namespace: AWS/ApplicationELB
+            AlarmActions: 
+                -   !Ref ScaleUpPolicy
+            ComparisonOperator: GreaterThanThreshold
+            MetricName: !Ref ScaleUpMetricName
+    ScaleUpAlarmMemoryUtlization:
+        Type: 'AWS::CloudWatch::Alarm'
+        Properties:
+            EvaluationPeriods: !Ref ScaleUpEvaluationPeriod
+            Statistic: !Ref ScaleUpStatistic
+            Threshold: !Ref ScaleUpThreshold
+            AlarmDescription: 'Alarm if our ALB generates too many HTTP 500s.'
+            Period: !Ref ScaleUpPeriod
+            Namespace: AWS/ApplicationELB
+            AlarmActions: 
+                -   !Ref ScaleUpPolicy
+            ComparisonOperator: GreaterThanThreshold
+            MetricName: MEMORYUTILIZATION
+    ScaleDownPolicy:
+        Type: 'AWS::ApplicationAutoScaling::ScalingPolicy'
+        Properties:
+            PolicyName: ScaleDownPolicy
+            PolicyType: StepScaling
+            ScalingTargetId: !Ref ScalingTarget
+            StepScalingPolicyConfiguration: 
+                AdjustmentType: ChangeInCapacity
+                Cooldown: !Ref ScaleDwnCoolDwn
+                MetricAggregationType: Average
+                StepAdjustments:
+                -   MetricIntervalUpperBound: !Ref ScaleDwnMetricIntUpperBound
+                    ScalingAdjustment: !Ref ScaleDwnAdjustment
+    ScaleDownAlarmCPUUtilization:
+        Type: 'AWS::CloudWatch::Alarm'
+        Properties:
+            EvaluationPeriods: !Ref ScaleDwnEvaluationPeriods
+            Statistic: !Ref ScaleUpStatistic
+            Threshold: !Ref ScaleDwnThreshold
+            AlarmDescription: "Alarm if CPU too Low or metric disappears indicating instance n is up"
+            Period: !Ref ScaleDwnPeriod
+            Namespace: AWS/ApplicationELB
+            AlarmActions: 
+                -   !Ref ScaleDownPolicy
+            ComparisonOperator: LessThanOrEqualToThreshold
+            MetricName: !Ref ScaleUpMetricName
+    ScaleDownAlarmMemoryUtlization:
+        Type: 'AWS::CloudWatch::Alarm'
+        Properties:
+            EvaluationPeriods: !Ref ScaleDwnEvaluationPeriods
+            Statistic: !Ref ScaleUpStatistic
+            Threshold: !Ref ScaleDwnThreshold
+            AlarmDescription: "Alarm if Memory too Low or metric disappears indicating instance is up"
+            Period: !Ref ScaleDwnPeriod
+            Namespace: AWS/ApplicationELB
+            AlarmActions: 
+                -   !Ref ScaleDownPolicy
+            ComparisonOperator: LessThanOrEqualToThreshold
+            MetricName: MEMORYUTILIZATION

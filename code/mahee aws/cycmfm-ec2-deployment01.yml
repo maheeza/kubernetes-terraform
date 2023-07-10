@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating Actian EC2 instace for MFM
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions: 
+
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc]
+    PRD: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], prd]
+    QA: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], qa]
+    DEV: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], dev]
+    SLP: !Or 
+      - Condition: PRD
+      - Condition: QA
+
+Resources:   
+
+    cycmfmec2policy: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, ec2role]
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Addpol1: !Join ['',['arn:aws:iam::',!FindInMap [Infra, !Ref "AWS::AccountId", NbtId],':role/cyc-',!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]],'-nbt-s3access-sharedAC-Role01']]
+                Addpol2: !Join ['',['arn:aws:iam::',!FindInMap [Infra, !Ref "AWS::AccountId", CmpId],':role/cyc-',!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]],'-cmp-s3access-sharedAC-Role01']]
+
+    cycmfmec1adeploy: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+          - cycmfmec2policy
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, ec2]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Desc: 'Actian Server'
+                Owner: 'Sree G'
+                HostID: 'act02a'
+#                AVZone: "us-east-1a"l
+                IamProfile: !Join ["", [!FindInMap [Infra, !Ref "AWS::AccountId", Name], "-ec2-Instance-Role01"]]
+                AMIID: !FindInMap [Infra, Global2, Winami]
+                Itype: !If [SLP, 'm5.xlarge', 'm5.large']
+                NetDescr: 'MFM Actian server NIC'
+                SubnetId: !Select [0, !Split [",", !FindInMap [Infra, !Ref "AWS::AccountId", splsnet]]]
+                SecsgId:
+                  Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], spl, sgid]]
+                DeviceN1: '/dev/sda1'
+                DeviceN3: 'xvdc'
+                DeviceN2: 'xvdb'
+                Devencr: true
+                Volsize1: !If [SLP, 300, 200]
+                Volsize2: !If [SLP, 1000, 300]
+                Volsize3: !If [SLP, 1000, 300]
+
+    cycmfmec1bdeploy: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+          - cycmfmec2policy
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, ec2]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Desc: 'Actian Server'
+                Owner: 'Sree G'
+                HostID: 'act02b'
+#                AVZone: "us-east-1a"
+                IamProfile: !Join ["", [!FindInMap [Infra, !Ref "AWS::AccountId", Name], "-ec2-Instance-Role01"]]
+                AMIID: !FindInMap [Infra, Global2, Winami]
+                Itype: !If [SLP, 'm5.xlarge', 'm5.large']
+                NetDescr: 'MFM Actian server NIC'
+                SubnetId: !Select [0, !Split [",", !FindInMap [Infra, !Ref "AWS::AccountId", splsnet]]]
+                SecsgId:
+                  Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], spl, sgid]]
+                DeviceN1: '/dev/sda1'
+                DeviceN3: 'xvdc'
+                DeviceN2: 'xvdb'
+                Devencr: true
+                Volsize1: !If [SLP, 300, 200]
+                Volsize2: !If [SLP, 1000, 300]
+                Volsize3: !If [SLP, 1000, 300]
+
+
+    cycmfmec1aaddlist: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+          - cycmfmec1adeploy
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, ec2listr]
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Segm: ms
+                Pri1: 450
+                Srvname: actian
+                URL: !FindInMap [Infra, !Ref "AWS::AccountId", URL]
+                PortN: 11091
+                Hpath: '/ediinvoker/util/guid?count=0'
+                Vpcid: !FindInMap [Infra, !Ref "AWS::AccountId", Vpcid]
+                #TG1AZ: 'all'
+                TG1IP: !GetAtt [cycmfmec1adeploy, Outputs.CYCEC2IPRef]
+#                  Fn::ImportValue: 
+#                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], act01a, instance, IP]]
+                TG1PT: 11091
+    cycmfmec1baddlist: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+          - cycmfmec1bdeploy
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, ec2listr]
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Segm: ms
+                Pri1: 452
+                Srvname: cycactian
+                URL: !FindInMap [Infra, !Ref "AWS::AccountId", URL]
+                PortN: 8443
+                Hpath: '/ediinvoker/util/guid?count=0'
+                Vpcid: !FindInMap [Infra, !Ref "AWS::AccountId", Vpcid]
+                #TG1AZ: 'all'
+                TG1IP: !GetAtt [cycmfmec1bdeploy, Outputs.CYCEC2IPRef]
+#                  Fn::ImportValue: 
+#                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], act01a, instance, IP]]
+                TG1PT: 8443

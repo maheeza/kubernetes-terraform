@@ -1,0 +1,695 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating NACL entry for the MFM 
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions: 
+
+    Wspace2: !Not [!Equals [!FindInMap [!Ref "AWS::AccountId", mfm, Wspace2], '127.0.0.0/24']]  
+    Valid: !Equals [!FindInMap [!Ref "AWS::AccountId", mfm,  Envr], cyc]
+    PRD: !Equals [!Select [1, !Split ["-", !FindInMap [!Ref "AWS::AccountId", mfm, Name]]], prd]
+    STG: !Equals [!Select [1, !Split ["-", !FindInMap [!Ref "AWS::AccountId", mfm, Name]]], stg]
+    INT: !Equals [!Select [1, !Split ["-", !FindInMap [!Ref "AWS::AccountId", mfm, Name]]], int]
+    QA: !Equals [!Select [1, !Split ["-", !FindInMap [!Ref "AWS::AccountId", mfm, Name]]], qa]
+    QIN: !Equals [!Select [1, !Split ["-", !FindInMap [!Ref "AWS::AccountId", mfm, Name]]], qin]
+    MO: !Equals [!Select [1, !Split ["-", !FindInMap [!Ref "AWS::AccountId", mfm, Name]]], mo]
+    DEV: !Equals [!Select [1, !Split ["-", !FindInMap [!Ref "AWS::AccountId", mfm, Name]]], dev]   
+    NPRD: !Or 
+        - Condition: DEV
+        - Condition: QA  
+        - Condition: QIN
+    NINT: !Not [Condition: INT]   
+    PROD: !Or 
+        - Condition: PRD
+        - Condition: STG
+        - Condition: INT 
+        - Condition: MO  
+
+Resources:   
+    cycmfmwebing1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-web-naclid']]
+                CBlock: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, CIDR],'.32.0/20']]
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1000
+                Prangef: 443
+                Pranget: 443
+
+    cycmfmwebing2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-web-naclid']]
+                CBlock: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, CIDR],'.32.0/20']]
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1200
+                Prangef: 1024
+                Pranget: 65535
+
+    cycmfmwebing3: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-web-naclid']]
+                CBlock: !FindInMap [!Ref "AWS::AccountId", mfm, Wafip]
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1400
+                Prangef: 443
+                Pranget: 443
+
+    cycmfmwebing4: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-web-naclid']]
+                CBlock: !FindInMap [!Ref "AWS::AccountId", mfm, Wafip]
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1600
+                Prangef: 1024
+                Pranget: 65535
+
+    cycmfmwebegr1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-web-naclid']]
+                CBlock: '0.0.0.0/0'
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5000
+                Prangef: 1024
+                Pranget: 65535
+
+    cycmfmwebegr2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-web-naclid']]
+                CBlock: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, CIDR],'.32.0/20']]
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5200
+                Prangef: 11080
+                Pranget: 11188                                           
+
+    cycmfmwebegr3: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-web-naclid']]
+                CBlock: !FindInMap [!Ref "AWS::AccountId", mfm, Wafip]
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5400
+                Prangef: 443
+                Pranget: 443 
+
+    cycmfmwebegr4: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-web-naclid']]
+                CBlock: !FindInMap [!Ref "AWS::AccountId", mfm, Wafip]
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5600
+                Prangef: 8443
+                Pranget: 8443                 
+
+    cycmfmmsing1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-ms-naclid']]
+                CBlock: '0.0.0.0/0'
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1000
+                Prangef: 1024
+                Pranget: 65535
+
+    cycmfmmsing2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-ms-naclid']]
+                CBlock: !FindInMap [!Ref "AWS::AccountId", mfm, Wspace]
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1200
+                Prangef: 22
+                Pranget: 22
+
+    cycmfmmsing2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Wspace2
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-ms-naclid']]
+                CBlock: !FindInMap [!Ref "AWS::AccountId", mfm, Wspace2]
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1400
+                Prangef: 22
+                Pranget: 22
+
+    cycmfmmsegr1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-ms-naclid']]
+                CBlock: '0.0.0.0/0'
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5000
+                Prangef: 443
+                Pranget: 443              
+
+    cycmfmmsegr2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-ms-naclid']]
+                CBlock: !FindInMap [!Ref "AWS::AccountId", mfm, Wspace]
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5200
+                Prangef: 1024
+                Pranget: 65535                
+
+    cycmfmmsegr2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Wspace2
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-ms-naclid']]
+                CBlock: !FindInMap [!Ref "AWS::AccountId", mfm, Wspace2]
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5400
+                Prangef: 1024
+                Pranget: 65535    
+
+    cycmfmmsegr3: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-ms-naclid']]
+                CBlock: !FindInMap [!Ref "AWS::AccountId", mfm, Ocidb]
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5600
+                Prangef: 1521
+                Pranget: 1523 
+
+    cycmfmmsegr4: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-ms-naclid']]
+                CBlock: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, CIDR],'.32.0/20']]
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5800
+                Prangef: 1024
+                Pranget: 65535                
+
+    cycmfmmsegr5: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-ms-naclid']]
+                CBlock: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, CIDR],'.18.0/23']]
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 6000
+                Prangef: 1024
+                Pranget: 65535 
+
+    cycmfmslaing1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:     
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-sla-naclid']]
+                CBlock: '0.0.0.0/0'
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1000
+                Prangef: 1024
+                Pranget: 65535
+
+    cycmfmslaing2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:     
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-sla-naclid']]
+                CBlock: '0.0.0.0/0'
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1200
+                Prangef: 443
+                Pranget: 443
+
+    cycmfmslaegr1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:     
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-sla-naclid']]
+                CBlock: '0.0.0.0/0'
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5000
+                Prangef: 1024
+                Pranget: 65535
+
+    cycmfmslaegr2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:     
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-sla-naclid']]
+                CBlock: '0.0.0.0/0'
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5200
+                Prangef: 443
+                Pranget: 443
+
+    cycmfmrdsing1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-rds-naclid']]
+                CBlock: '0.0.0.0/0'
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1200
+                Prangef: 1024
+                Pranget: 65535
+
+    cycmfmrdsegr1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-rds-naclid']]
+                CBlock: '0.0.0.0/0'
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5000
+                Prangef: 443
+                Pranget: 443
+
+    cycmfmspling1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: '0.0.0.0/0'
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1000
+                Prangef: 1024
+                Pranget: 65535
+
+    cycmfmrdsegr2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-rds-naclid']]
+                CBlock: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, CIDR],'.16.0/20']]
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5200
+                Prangef: 1024
+                Pranget: 65535
+
+    cycmfmspling2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: '10.0.0.0/8'
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1200
+                Prangef: 443
+                Pranget: 443
+
+    cycmfmspling3: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: !FindInMap [!Ref "AWS::AccountId", mfm, Wspace]
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1400
+                Prangef: 22
+                Pranget: 22
+
+    cycmfmspling3a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Wspace2
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: !FindInMap [!Ref "AWS::AccountId", mfm, Wspace2]
+                PCole: 6
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1600
+                Prangef: 22
+                Pranget: 22
+
+#    cycmfmspling3b: 
+#        Type: 'AWS::CloudFormation::Stack'
+#        Condition: NPRD
+#        Properties: 
+#            TemplateURL: !FindInMap [Infra, Global, nacl]
+#            Parameters: 
+#                NACLId:  
+#                    Fn::ImportValue: 
+#                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+#                CBlock: '10.96.162.0/23'
+#                PCole: 6
+#                INgres: Ingress
+#                RuleAction: Allow 
+#                Rnumber: 1800
+#                Prangef: 22
+#                Pranget: 22
+
+    cycmfmspling6a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1, corpdc2]]],'.0/24']]
+                PCole: -1
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 1800
+                Prangef: 22
+                Pranget: 22 
+
+    cycmfmspling6b: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1, corpdc1]]],'.0/24']]
+                PCole: -1
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 2000
+                Prangef: 22
+                Pranget: 22 
+
+    cycmfmspling6c: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: PROD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1,  prddc1]]],'.0/24']]
+                PCole: -1
+                INgres: Ingress
+                RuleAction: Allow 
+                Rnumber: 2200
+                Prangef: 22
+                Pranget: 22 
+
+
+
+    cycmfmsplegr1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: '0.0.0.0/0'
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5000
+                Prangef: 443
+                Pranget: 443
+
+    cycmfmsplegr2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: '10.0.0.0/8'
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5200
+                Prangef: 1024
+                Pranget: 65535
+
+    cycmfmsplegr3: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: !FindInMap [!Ref "AWS::AccountId", mfm, Ocidb]
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5400
+                Prangef: 1521
+                Pranget: 1526
+
+    cycmfmsplegr4: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['', [!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: !Join ['', [!FindInMap [!Ref "AWS::AccountId", mfm, CIDR],'.141.0/25']]
+                PCole: 6
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5600
+                Prangef: 22
+                Pranget: 22
+
+    cycmfmsplegr4a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1, corpdc1]]],'.0/24']]
+                PCole: -1
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5800
+                Prangef: 1521
+                Pranget: 1526  
+
+    cycmfmsplegr4b: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1, corpdc2]]],'.0/24']]
+                PCole: -1
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 6000
+                Prangef: 1521
+                Pranget: 1526  
+
+    cycmfmsplegr4c: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: PROD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, nacl]
+            Parameters: 
+                NACLId:  
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, Name],'-nacl-spl-naclid']]
+                CBlock: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1, prddc1]]],'.0/24']]
+                PCole: -1
+                INgres: Egress
+                RuleAction: Allow 
+                Rnumber: 5800
+                Prangef: 1521
+                Pranget: 1526                    

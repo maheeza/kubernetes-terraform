@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating stack for MFM Security Service
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions: 
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc]
+    PRD: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], prd]
+
+Resources:  
+
+    cyclistr1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, listr]
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Segm:  ms
+                Srvname: !FindInMap [Infra, mserv1, Srv8Name]
+                URL: !FindInMap [Infra, !Ref "AWS::AccountId", URL]
+                URL2: !FindInMap [Infra, !Ref "AWS::AccountId", URL2]
+                Desc: !FindInMap [Infra, !Ref "AWS::AccountId", Desc]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                Vpcid: !FindInMap [Infra, !Ref "AWS::AccountId", Vpcid]
+                LBType: alb
+                Hpath: '/serviceHealthCheck'
+                URLFl: "Y"
+                HealthCheckTimeoutSeconds: 50
+                HealthCheckIntervalSeconds: 60
+                PortN: !FindInMap [Infra, mserv2, Srv8Port]
+                Pri1: !FindInMap [Infra, mserv2, Srv8Pri]
+                Pri2: !FindInMap [Infra, mserv2, Srv8Pria]                
+
+    cycecs1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TimeoutInMinutes: 25
+            TemplateURL: !FindInMap [Infra, Global, xray]
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                EnvironmentValue: !Select [1, !Split ["-",!FindInMap [Infra, !Ref "AWS::AccountId", Name]]]
+                Reser: !Select [3, !Split [",", !FindInMap [Infra, mserv1, Srv8mem]]]
+                Resercpu:  !Select [3, !Split [",", !FindInMap [Infra, mserv1, Srv8cpu]]]
+                Srvname: !FindInMap [Infra, mserv1, Srv8Name]
+                Memory: !FindInMap [Infra, mserv1, Srv8mem]
+                Cpu: !FindInMap [Infra, mserv1, Srv8cpu]
+                ContainerPort: !FindInMap [Infra, mserv2, Srv8Port]
+                DesiredCapacity: !Select [0, !Split [',', !FindInMap [Infra, !Ref "AWS::AccountId", Srv8counts]]]
+                MinSize: !Select [0, !Split [',', !FindInMap [Infra, !Ref "AWS::AccountId", Srv8counts]]]
+                MaxSize: !Select [1, !Split [',', !FindInMap [Infra, !Ref "AWS::AccountId", Srv8counts]]]
+                Vpcid: !FindInMap [Infra, !Ref "AWS::AccountId", Vpcid]
+                ImageARN: !Join ["", [!FindInMap [Infra, Global, ImagePrdArn], !FindInMap [Infra, mserv1, Srv8Name],':']]
+                Subnets: !FindInMap [Infra, !Ref "AWS::AccountId", mssnet]
+                ImgTag: !FindInMap [Infra, !Ref "AWS::AccountId", ImgTag]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                TargetGroupArn: !GetAtt [cyclistr1, Outputs.cyctg01]               
+                repoName: !FindInMap [Infra, mserv1, Srv8Name]
+                Cluster: !Join ['-', [!FindInMap [Infra, !Ref "AWS::AccountId", Name],'fg01']]           
+                Sclmethod: TargetTrackingScaling
+                cwlpref: '/cyc/ecs/'
+                LogRetention: !If [PRD, 365, 14]
+                TValue: 50              
+                SICooldown: 60
+                SOCooldown: 300

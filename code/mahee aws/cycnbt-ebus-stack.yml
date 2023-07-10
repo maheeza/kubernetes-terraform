@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Event Bus Lambda for  ECS Code update for NBT Project
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/nbt/cycnbtglobalvariables.yml'
+
+Conditions: 
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc]
+    PRD: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], prd]
+
+Resources:
+
+    cycnbtebuslmdrole: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmdecsrole]
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Rootid: !Ref "AWS::AccountId"
+
+#    cycnbtebusrole: 
+#        Type: 'AWS::CloudFormation::Stack'
+#        Condition: Valid
+#        Properties: 
+#            TemplateURL: !FindInMap [Infra, Global, ebuspol]
+#            Parameters: 
+#                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+
+    cycnbtebuslmd: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        DependsOn: 
+            - cycnbtebuslmdrole
+        Properties: 
+            TimeoutInMinutes: 10 
+            TemplateURL: !FindInMap [Infra, Global, lmd1]
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Srvname: !FindInMap [Infra, lambda6, lmd101Name]
+                Codel: 'cyc-prd-repository'                 
+                Codeb: 'apps/infra/lambda/cyc-ecr-update-task.zip'
+                Desc: !Join [' ',[!FindInMap [Infra, !Ref "AWS::AccountId", Desc],' EventBus Lambda for ECS auto update']]
+                Handler: !FindInMap [Infra, lambda6, lmd101hand]
+                EventPermission: 'Yes'
+                Memory: 256
+                Role:  !GetAtt [cycnbtebuslmdrole, Outputs.cycrole01Ref]
+#                  Fn::ImportValue: 
+#                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], lambda, ecs, Roleid]]
+                Runtime: !FindInMap [Infra, lambda6, lmd101Rtime]
+                Purpose: !Join [' ',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], ' CYC SNS Topics for communication']]
+                Tout1: 120
+                SNet1: !Select [0, !Split [",",!FindInMap [Infra, !Ref "AWS::AccountId", slasnet]]]
+                SNet2: !Select [1, !Split [",",!FindInMap [Infra, !Ref "AWS::AccountId", slasnet]]]
+
+                Sg1: 
+                  Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], sla, sgid]]
+
+    cycnbtebussns: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sns]
+            TimeoutInMinutes: 10 
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                TopicName: eb-ecs-sns-update
+                DisplayName: 'Event Bus ECS Update SNS Topics'
+                Purpose: !Join [' ',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], ' CYC SNS Topics for communication']]
+
+    cycnbtebus: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn: 
+            - cycnbtebuslmd
+            - cycnbtebussns
+        Condition: Valid
+        Properties: 
+            TimeoutInMinutes: 10
+            TemplateURL: !FindInMap [Infra, Global, ebus]
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                EBName: 'default'
+                Desc: 'EventBus for ECS service update'
+                RName: 'ecr-update'                 
+                RoleArn: !Join ["", ['arn:aws:iam::', !Ref "AWS::AccountId", ':role/', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-eventbus-Role01a']]
+#                  Fn::ImportValue: 
+#                   !Join ["-", [!FindInMap [Infra, !Ref "AWS::AccountId", Name], eventbus, RoleArn]]                
+#                !GetAtt [cycnbtebusrole, Outputs.EventBusroleArn]
+#                TargetRoleArn1: !GetAtt [cycnbtebusrole, Outputs.EventBusroleArn]
+#                Role:  !GetAtt [cycnbtebuslmdrole, Outputs.cycrole01Ref]
+                TArn1: !GetAtt [cycnbtebuslmd, Outputs.Lmdid01]
+                TArn2: !GetAtt [cycnbtebussns, Outputs.cycsnstopicid01]
+                Source: 'aws.ecr'
+                dtype: 'ECR Image Action'
+                atype: PUSH
+                itag: !FindInMap [Infra, !Ref "AWS::AccountId", ImgTag]
+                Idvalue: !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'ecsupdate']]
+                EcrVal: !FindInMap [Infra, Global, EcrVal]
+
+    cyclmdtrg: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+          - "cycnbtebus"
+          - "cycpermission"
+        Condition: Valid
+        Properties: 
+           TimeoutInMinutes: 10
+           TemplateURL: !FindInMap [Infra, Global, lmdtrg]
+           Parameters: 
+               FunctionName: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], eb, ecs, update]]
+
+    cycpermission:
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+          - "cycnbtebus"
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global, lmdevper]
+            Parameters:
+                Function: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], eb, ecs, update]]
+                SourceArn: !GetAtt [cycnbtebus, Outputs.ebus01]
+                Principal: 'events.amazonaws.com'

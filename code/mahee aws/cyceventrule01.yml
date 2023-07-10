@@ -1,0 +1,185 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description:  This is Globla Template for CYC Event Rule deployment
+
+Parameters:
+
+  Envr:
+    Description: Enter the Environment Information please cyc-dev-ec-infra
+    Type: String
+
+  EvBusCreate:
+    Description: 'Event Bus Need to create?'
+    Type: String
+    Default: 'NO'
+    AllowedValues:  
+      - 'YES'
+      - 'NO'
+
+  EvBusName:
+    Description: 'Event Bus Name'
+    Type: String
+
+  EvRulName:
+    Description: 'Event Rule Name'
+    Type: String
+
+  RoleArn:
+    Description: Code Bucket for the Function
+    Type: String
+
+  State:
+    Description: Event Bus Require Status
+    Type: String
+    Default: ENABLED
+    AllowedValues:  
+      - ENABLED
+      - DISABLED
+
+  ScheduleExpression:
+    Description: Event Bus Schedule Expression
+    Type: String
+    Default: "no-Value"
+
+  TargetsArn1:
+    Description: Event Bus Target Arn 1
+    Type: String
+    Default: "no-Value"
+
+  TargetsID1:
+    Description: Event Bus Target ID 1
+    Type: String
+    Default: "no-Value"
+
+  TargetsArn2:
+    Description: Event Bus Target Arn 2
+    Type: String
+    Default: "no-Value"
+
+  TargetsID2:
+    Description: Event Bus Target ID 2
+    Type: String
+    Default: "no-Value"
+
+  TargetsArn3:
+    Description: Event Bus Target Arn 3
+    Type: String
+    Default: "no-Value"
+
+  TargetsID3:
+    Description: Event Bus Target ID 3
+    Type: String
+    Default: "no-Value"
+
+  EventPattern:
+    Description: Event Rule Pattern 
+    Type: String
+    Default: "no-Value"  
+
+Conditions: 
+  SExpre: !Not [!Equals [ !Ref ScheduleExpression, "no-Value"]]
+  TargetsArn1: !Not [!Equals [ !Ref TargetsArn1, "no-Value"]]
+  TargetsArn2: !Not [!Equals [ !Ref TargetsArn2, "no-Value"]]
+  TargetsArn3: !Not [!Equals [ !Ref TargetsArn3, "no-Value"]]
+  EventPattern: !Not [!Equals [ !Ref EventPattern, "no-Value"]]
+  EvBusCreate: !Equals [!Ref EvBusCreate, "YES"]
+  NEvBusCreate: !Not [Condition: EvBusCreate]
+
+Resources:
+    CYCEventRule:
+      Type: AWS::Events::Rule
+      Condition: NEvBusCreate
+      Properties: 
+        Description: !Join ['-', [' Event Bridge Rule for', !Ref Envr, !Ref EvBusName]]
+        EventBusName: !Ref EvBusName
+        EventPattern: !If [EventPattern, !Ref EventPattern, !Ref 'AWS::NoValue']
+        Name: !Join ['-', [!Ref Envr, !Ref EvRulName]]
+        RoleArn: !Ref RoleArn
+        ScheduleExpression: !If [SExpre, !Ref ScheduleExpression, !Ref 'AWS::NoValue']
+        State: !Ref State
+        Targets: 
+          - !If 
+            - TargetsArn1
+            - 
+              Arn: !Ref TargetsArn1
+              Id: !Ref TargetsID1
+            - !Ref 'AWS::NoValue'
+          - !If 
+            - TargetsArn2
+            - 
+              Arn: !Ref TargetsArn2
+              Id: !Ref TargetsID2
+            - !Ref 'AWS::NoValue'
+          - !If 
+            - TargetsArn3
+            - 
+              Arn: !Ref TargetsArn3
+              Id: !Ref TargetsID3
+            - !Ref 'AWS::NoValue'      
+
+    CYCNewEventRule:
+      Type: AWS::Events::Rule
+      Condition: EvBusCreate
+      DependsOn:
+        - CYCCustomEventBus
+      Properties: 
+        Description: !Join ['-', [!Ref Envr, ' Event Bridge Rule for', !Ref EvBusName]]
+        EventBusName: !Ref EvBusName
+        EventPattern: !If [EventPattern, !Ref EventPattern, !Ref 'AWS::NoValue']
+        Name: !Join ['-', [!Ref Envr, !Ref EvRulName]]
+        RoleArn: !Ref RoleArn
+        ScheduleExpression: !If [SExpre, !Ref ScheduleExpression, !Ref 'AWS::NoValue']
+        State: !Ref State
+        Targets: 
+          - !If 
+            - TargetsArn1
+            - 
+              Arn: !Ref TargetsArn1
+              Id: !Ref TargetsID1
+            - !Ref 'AWS::NoValue'
+          - !If 
+            - TargetsArn2
+            - 
+              Arn: !Ref TargetsArn2
+              Id: !Ref TargetsID2
+            - !Ref 'AWS::NoValue'
+          - !If 
+            - TargetsArn3
+            - 
+              Arn: !Ref TargetsArn3
+              Id: !Ref TargetsID3
+            - !Ref 'AWS::NoValue'
+
+    CYCCustomEventBus:    
+      Type: AWS::Events::EventBus
+      Condition: EvBusCreate
+      Properties: 
+        Name: !Ref EvBusName
+
+Outputs:
+    CYCEventRuleArb:
+        Description: EventBust Rule 01
+        Condition: NEvBusCreate
+        Value: !GetAtt [CYCEventRule, Arn]
+        Export: 
+            Name: !Join ["-", [!Ref Envr, !Ref EvBusName, !Ref EvRulName, arn]]    
+
+    CYCEventRuleID:
+        Description: EventBust Rule ID
+        Condition: NEvBusCreate
+        Value: !Ref CYCEventRule
+        Export: 
+            Name: !Join ["-",[!Ref Envr, !Ref EvBusName, !Ref EvRulName, id]]
+
+    CYCNewEventRuleArb:
+        Description: EventBust Rule 01
+        Condition: EvBusCreate
+        Value: !GetAtt [CYCNewEventRule, Arn]
+        Export: 
+            Name: !Join ["-", [!Ref Envr, !Ref EvBusName, !Ref EvRulName, arn]]    
+
+    CYCNewEventRuleID:
+        Description: EventBust Rule ID
+        Condition: EvBusCreate
+        Value: !Ref CYCNewEventRule
+        Export: 
+            Name: !Join ["-",[!Ref Envr, !Ref EvBusName, !Ref EvRulName, id]]            

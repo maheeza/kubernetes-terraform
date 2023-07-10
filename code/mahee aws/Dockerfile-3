@@ -1,0 +1,10 @@
+FROM 687720138916.dkr.ecr.us-east-1.amazonaws.com/cyc-baseimage-j8:
+MAINTAINER DevOps Team, cyc-devops@connectuourcare.com
+RUN mkdir -p /microservices
+COPY microservice-exec.jar /microservices/microservice-exec.jar
+COPY start_microservice.sh /microservices
+WORKDIR /
+ENV CLASSPATH /microservices/
+EXPOSE 8080
+ENTRYPOINT ["sh", "/microservices/start_microservice.sh"]
+CMD ["default","default"]

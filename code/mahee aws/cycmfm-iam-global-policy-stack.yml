@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating Policies for MFM Project
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters:
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions:
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc]
+
+Resources:
+    cyccmpmainpolicy:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global2, mainpolicy]
+            Parameters:
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                SidName: !Join ['',[!Select [0, !Split ['-',!FindInMap [Infra, !Ref "AWS::AccountId", Name]]], !Select [1, !Split ['-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]],!Select [2, !Split ['-',!FindInMap [Infra, !Ref "AWS::AccountId", Name]]]]]
+
+    cycmfmtrole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global, trole]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                Rootid: !FindInMap [Infra, !Ref "AWS::AccountId", Rootid]
+                Recarn1: !Join ['/', ['arn:aws:s3:::cyc-repository/cyctppbuild/microservices', !Select ['1', !Split ['-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], '*']]
+                Recarn2: !Join ['/', ['arn:aws:s3:::cyc-repository/cycmfmbuild/microservices', !Select ['1', !Split ['-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], '*']]
+                Recarn3: !Join ['/', ['arn:aws:s3:::cyc-build-repository/mfm', !Select ['1', !Split ['-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], '*']]
+
+    cycmfmerole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global, erole]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+
+    cycmfmasrole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global, asrole]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+
+    cycmflmdrole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global, lmdrole]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Rootid: !FindInMap [Infra, !Ref "AWS::AccountId", Rootid]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+
+    #    cycmflmdecsrole:
+    #        Type: 'AWS::CloudFormation::Stack'
+    #        Condition: Valid
+    #        Properties:
+    #            TemplateURL: !FindInMap [Infra, Global, lmdecsrole]
+    #            Parameters:
+    #                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+    #                Rootid: !FindInMap [Infra, !Ref "AWS::AccountId", Rootid]
+    #                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]

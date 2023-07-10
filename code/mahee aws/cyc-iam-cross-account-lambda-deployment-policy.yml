@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create Cross account access policy - Resource Account
+Parameters:
+  Envr:
+    Description: Enter the environment Value please
+    Type: String
+
+  Owner:
+    Description: Owner of the resource
+    Type: String
+    Default: Kamlesh G
+
+  PolName:
+    Description: Enter Policy Name
+    Type: String
+
+  JenkinsAccountId:
+    Description: Enter the Jenkins Pipeline AWS Account Id
+    Type: String
+    Default: noValue
+
+Conditions:
+  JenkinsAccountId: !Not [ !Equals [ !Ref JenkinsAccountId, 'noValue' ] ]
+
+Resources:
+  cycdevopsexecutionrole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join [ "-", [ !Ref Envr, !Ref PolName, sharedAC, Role01 ] ]
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS:
+                - !If [ JenkinsAccountId, !Sub 'arn:aws:iam::${JenkinsAccountId}:root', !Ref 'AWS::NoValue' ]
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+
+  cyccloudFormationAccess:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      Description: Remote Account Access Policy
+      Path: /
+      ManagedPolicyName: !Join [ "-", [ !Ref Envr, !Ref PolName, sharedAC, "Policy01" ] ]
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - lambda:UpdateFunctionCode
+              - lambda:PublishVersion
+              - lambda:UpdateAlias
+            Resource:
+              - "*"
+            Sid: "cycLambdaDeploymentPolicy"
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:GetObjectACL
+            Resource:
+              - "arn:aws:s3:::cyc-build-repository/*"
+            Sid: "cycExternalAccountS3Policy"
+      Roles:
+        - Ref: cycdevopsexecutionrole
+
+Outputs:
+  Devopspolicy:
+    Value: !Ref cyccloudFormationAccess
+    Export:
+      Name: !Join [ "-", [ !Ref Envr, !Ref PolName, sharedAC, Policyid ] ]
+    Description: Fn::Join ["-", [ global service Policy for, !Ref Envr]]
+
+  Devopsrole:
+    Value: !Ref cycdevopsexecutionrole
+    Export:
+      Name: !Join [ "-", [ !Ref Envr, !Ref PolName, sharedAC, Roleid ] ]
+    Description: Fn::Join ["-", [ global service Role for, !Ref Envr]]

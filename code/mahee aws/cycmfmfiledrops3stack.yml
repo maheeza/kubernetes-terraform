@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:  CYC S3 stack for MFM
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions: 
+  zonea:  !Equals [ !FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc ]
+  zoneb:  !Equals [ !FindInMap [Infra, !Ref "AWS::AccountId", AvZone], !Ref "AWS::Region"]
+  zone1:  !And 
+      - Condition:  zonea
+      - Condition:  zoneb
+
+Resources:   
+
+    cycbk8: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: zone1        
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, S3]
+            Parameters: 
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                Vpcid: !FindInMap [Infra, !Ref "AWS::AccountId", Vpcid]
+                Bsuff: !FindInMap [Infra, s3, bk10Name]
+                Accid: !FindInMap [Infra, !Ref "AWS::AccountId", Accid]
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                # LEvent1: 's3:ObjectCreated:*'
+                # LEvent1PrV: 'Census-Inbound'
+                # LEvent1FN: 
+                  # Fn::ImportValue: 
+                    # !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda, lmd13Name], id]]
+                

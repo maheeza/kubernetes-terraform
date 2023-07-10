@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating stack for MFM CDEXfilegenerator service
+Transform:
+      Name: 'AWS::Include'
+      Parameters:
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions:
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc]
+
+Resources:
+    cycsm1:
+        Type: 'AWS::CloudFormation::Stack'
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global, sm]
+            Parameters:
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                Name:  !Join ['', [!FindInMap [Infra, mserv1, Srv18Name], '-service']]
+                Desc: !Join ['', [!FindInMap [Infra, mserv1, Srv18Name],' Secrets Manager 01']]
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                
+                # Service Configuration
+
+                Key1info: 'auth.username'
+                Val1Info: !Join  
+                    - ""
+                    - - "{{resolve:secretsmanager:arn:aws:secretsmanager:us-east-1:687720138916:secret:cyc-mfm-cdexfilegenerator-service-pR69VD:SecretString:cyc-cdexfilegenerator-"
+                      - !Select [1, !Split [ '-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]]
+                      - "-auth-username}}:!:XYZ" 
+
+                Key2info: 'auth.password'
+                Val2Info: !Join  
+                    - ""
+                    - - "{{resolve:secretsmanager:arn:aws:secretsmanager:us-east-1:687720138916:secret:cyc-mfm-cdexfilegenerator-service-pR69VD:SecretString:cyc-cdexfilegenerator-"
+                      - !Select [1, !Split [ '-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]]
+                      - "-auth-password}}:!:XYZ"
+
+                Key3info: 'server.port'
+                Val3Info: !Join ['', [!FindInMap [Infra, mserv2, Srv18Port], ':!:XYZ']]
+
+                # SSL Configuration
+
+                Key4info: 'server.ssl.enabled'
+                Val4Info: 'true:!:XYZ'
+                Key5info: 'server.ssl.key-store-type'
+                Val5Info: 'JKS:!:XYZ'
+                Key6info: 'server.ssl.key-store'
+                Val6Info: !Join ['', ['/microservices/mfm-',!Select [1, !Split [ '-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]],'-keystore.jks', ':!:XYZ']]
+                Key7info: 'server.ssl.key-alias'
+                Val7Info: !Join ['', ['mfm-',!Select [1, !Split [ '-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], ':!:XYZ']]
+                Key8info: 'server.ssl.key-store-password'
+                Val8Info: !Join  
+                    - ""
+                    - - "{{resolve:secretsmanager:arn:aws:secretsmanager:us-east-1:687720138916:secret:cyc-mfm-cdexfilegenerator-service-pR69VD:SecretString:cyc-cdexfilegenerator-"
+                      - !Select [1, !Split [ '-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]]
+                      - "-keystore-password}}:!:XYZ"
+
+                #Datasource Configuration
+
+                Key9info: 'spring.datasource.url'
+                Val9Info: !Join
+                    - ''
+                    - - 'jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST='
+                      - !FindInMap [Infra, !Ref "AWS::AccountId", OraHN1]
+                      - ')(PORT=1521))(CONNECT_DATA=(SERVICE_NAME='
+                      - !FindInMap [Infra, !Ref "AWS::AccountId", OraSN1]
+                      - '))):!:XYZ'
+
+                Key10info: 'spring.datasource.username'
+                Val10Info: !Join  
+                    - ""
+                    - - "{{resolve:secretsmanager:arn:aws:secretsmanager:us-east-1:687720138916:secret:cyc-mfm-cdexfilegenerator-service-pR69VD:SecretString:cyc-cdexfilegenerator-"
+                      - !Select [1, !Split [ '-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]]
+                      - "-db-user}}:!:XYZ"
+
+                Key11info: 'spring.datasource.password'
+                Val11Info: !Join  
+                    - ""
+                    - - "{{resolve:secretsmanager:arn:aws:secretsmanager:us-east-1:687720138916:secret:cyc-mfm-cdexfilegenerator-service-pR69VD:SecretString:cyc-cdexfilegenerator-"
+                      - !Select [1, !Split [ '-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]]
+                      - "-db-password}}:!:XYZ"
+
+    cyclistr1:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        DependsOn:
+          - cycsm1
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global, listr]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Segm:  ms
+                Srvname: !FindInMap [Infra, mserv1, Srv18Name]
+                URLFl: "Y"
+                URL: !FindInMap [Infra, !Ref "AWS::AccountId", URL]
+                URL2: !FindInMap [Infra, !Ref "AWS::AccountId", URL2]
+                Desc: !FindInMap [Infra, !Ref "AWS::AccountId", Desc]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                Vpcid: !FindInMap [Infra, !Ref "AWS::AccountId", Vpcid]
+                LBType: alb
+                Hpath: '/actuator/health'
+                PortN: !FindInMap [Infra, mserv2, Srv18Port]
+                Pri1: !FindInMap [Infra, mserv2, Srv18Pri]
+                Pri2: !FindInMap [Infra, mserv2, Srv18Pria]
+
+    cycecs1:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TimeoutInMinutes: !FindInMap [Infra, Global, ImagePullTimeout]
+            TemplateURL: !FindInMap [Infra, Global, xray]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                EnvironmentValue: !Select [1, !Split ["-",!FindInMap [Infra, !Ref "AWS::AccountId", Name]]]
+                Reser: !Select [3, !Split [",", !FindInMap [Infra, mserv1, Srv18mem]]]
+                Resercpu: !Select [3, !Split [",", !FindInMap [Infra, mserv1, Srv18cpu]]]
+                Srvname: !FindInMap [Infra, mserv1, Srv18Name]
+                Memory: !FindInMap [Infra, mserv1, Srv18mem]
+                Cpu: !FindInMap [Infra, mserv1, Srv18cpu]
+                ContainerPort: !FindInMap [Infra, mserv2, Srv18Port]
+                DesiredCapacity: !Select [0, !Split [',', !FindInMap [Infra, !Ref "AWS::AccountId", Srv18counts]]]
+                MaxSize: !Select [1, !Split [',', !FindInMap [Infra, !Ref "AWS::AccountId", Srv18counts]]]
+                Vpcid: !FindInMap [Infra, !Ref "AWS::AccountId", Vpcid]
+                ImageARN: !Join ["", [!FindInMap [Infra, Global, ImagePrdArn], !FindInMap [Infra, mserv1, Srv18Name], ':']]
+                Subnets: !FindInMap [Infra, !Ref "AWS::AccountId", mssnet]
+                ImgTag: !FindInMap [Infra, !Ref "AWS::AccountId", ImgTag]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                TargetGroupArn: !GetAtt [cyclistr1, Outputs.cyctg01]
+                repoName: !Join ['-', [!FindInMap [Infra, mserv1, Srv18Name], service]]
+                Cluster: !Join ['-', [!FindInMap [Infra, !Ref "AWS::AccountId", Name],'fg01']]
+                Sclmethod: TargetTrackingScaling

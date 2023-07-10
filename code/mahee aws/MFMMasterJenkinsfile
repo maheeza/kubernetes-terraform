@@ -1,0 +1,33 @@
+def projectProperties = [
+        [$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '30']],
+    ]
+node {
+	def name = "$params.reponame"
+	def branch = "$params.env"
+    	
+	print "------------------------------------"
+	print "reponame: $params.reponame"
+	print "branch: $params.env"
+	print "------------------------------------"
+	
+	stage("Building $params.reponame"){
+    	if("$name" == "--Select Repo--" || ("$branch" != "dev" && "$branch" != "qa" && "$branch" != "develop"  && "$branch" != "development" && "$branch" != "release-candidate")) {
+    	    sh "echo Please choose Repo and Branch names"
+    	    sh "exit 1"
+    	}
+		if ("$branch" == "dev" || "$branch" == "qa" || "$branch" == "mo" || "$branch" == "stg" || "$branch" == "prd") {
+			if("$name" == "checkInterfaceDependency" || "$name" == "createErrorReport" || "$name" == "dissectorFailoverLambda" || "$name" == "ediinvoker-lambda" || "$name" == "ediInvokerLambda" || "$name" == "invalidRecord" || "$name" == "processWaitingOnDependencyFiles" || "$name" == "saveAndValidateFailoverLambda" || "$name" == "saveAndValidateRecords" || "$name" == "saveStagingMetaData" || "$name" == "sendCompletedFileEmail" || "$name" == "sendDuplicateFileEmail" || "$name" == "sendEmail" || "$name" == "sendFileStatusReminderEmail" || "$name" == "sendOffScheduleMail" || "$name" == "sendPausedFileEmail" || "$name" == "sendPendingWaitingOnDependencyFileEmail" || "$name" == "sendProcessedFileEmail" || "$name" == "sqsMessageReceiver" || "$name" == "stagingProcessIdsRetriever" || "$name" == "stagingrecord-aggregate-lambda" || "$name" == "triggerErrorReport" || "$name" == "uowDeadLetterEmailTrigger" || "$name" == "fileNotReceivedForScheduleRun" || "$name" == "sendFileNotReceivedEmail" || "$name" == "sendProcessingAlertEmail" || "$name" == "getPropsFromSecretsManager" || "$name" == "sendRecordsToMetricsQueue" || "$name" == "aggregateAndSaveCensusMetrics" || "$name" == "aggregateAndSaveEnrollmentMetrics" || "$name" == "validateMetrics" || "$name" == "stagingdynamodbtriggerStream" || "$name" == "dynamoDBstreamStaging"){
+				println "$name"
+				build job: 'CYC-MFM-BUILDS/MFM-CI-Lambda-Builds', parameters: [string(name: 'reponame', value: "${name}"),string(name: 'env', value: "${branch}")], wait: true
+			}
+			else if("$name" == "client" || "$name" == "audittrail" || "$name" == "stagingrecord-dissector" || "$name" == "interface" || "$name" == "metrics" || "$name" == "scheduler" || "$name" == "schedule" || "$name" == "security" || "$name" == "staging" || "$name" == "storage") {
+				println "$name"
+				build job: 'CYC-MFM-BUILDS/MFM-CI-MS-Builds', parameters: [string(name: 'reponame', value: "${name}"),string(name: 'env', value: "${branch}")], wait: true
+			}
+            else if("$name" == "uow-convertor-lambda" || "$name" == "uow-processor-lambda" || "$name" == "uow-submitter-lambda" || "$name" == "stagingrecord-aggregate-lambda") {
+				println "$name"
+				build job: 'CYC-MFM-BUILDS/MFM-UOW-BATCH-BUILDS', parameters: [string(name: 'repoName', value: "${name}"),string(name: 'env', value: "${branch}")], wait: true
+			}
+		}
+	}
+}

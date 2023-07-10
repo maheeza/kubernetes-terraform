@@ -1,0 +1,358 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: ECS cluster running Gitlab runner
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  InstanceType:
+    Description: Instance type that will be used in for runner instance
+    Type: String
+    Default: t3.medium
+  ECSSecurityGroup:
+    Type: String
+    Default: sg-0f14b653f0f2e6c95
+  KeyName:
+    Type: String
+    Description: SSH Key name to access the machine
+    Default: ''
+  GitlabRunnerImage:
+    Type: String
+    Default: gitlab/gitlab-runner:v12.6.0
+  ECSAMI:
+    Description: AMI ID
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id
+  ECSRole:
+    Type: String
+    Default: cyc-tc-gitlab-ecs-role
+  TaskRole:
+    Type: String
+    Default: arn:aws:iam::081770291835:role/cyc-tc-gitlab-ecs-role
+  VPCSubnet:
+    Type: String
+  RunnerName:
+    Description: aws runner name
+    Type: String
+  GitlabURL:
+    Description: URL of gitlab
+    Type: String
+    Default: https://gitlab.connectyourcare.net
+  RunnerToken:
+    Description: Token of Gitlab Runner
+    Type: String
+  TagList:
+    Description: Tag list of gitlab runner, comma separated, required
+    Type: String
+    Default: CYC-shared,CYC-default
+Conditions:
+  SSHAccess:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: KeyName
+      - ''
+Resources:
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName:
+        Ref: AWS::StackName
+  ECSLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: ${AWS::StackName}-logs
+  ECSInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+      - Ref: ECSRole
+  ECSAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchConfigurationName:
+        Ref: ECSLaunchConfiguration
+      MinSize: '1'
+      MaxSize: '1'
+      DesiredCapacity: '1'
+      VPCZoneIdentifier:
+      - Ref: VPCSubnet
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-ecs-instance
+        PropagateAtLaunch: true
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+  ECSLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId:
+        Ref: ECSAMI
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        Fn::If:
+        - SSHAccess
+        - Ref: KeyName
+        - Ref: AWS::NoValue
+      SecurityGroups:
+      - Ref: ECSSecurityGroup
+      IamInstanceProfile:
+        Ref: ECSInstanceProfile
+      UserData:
+        Fn::Base64:
+          Fn::Sub: '#!/bin/bash
+
+            yum install -y aws-cfn-bootstrap
+
+            /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName}
+            --resource ECSLaunchConfiguration
+
+            /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack ${AWS::StackName}
+            --resource ECSAutoScalingGroup
+
+            '
+      BlockDeviceMappings:
+      - DeviceName: /dev/xvdcz
+        Ebs:
+          VolumeSize: 100
+          VolumeType: gp2
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          packages:
+            yum:
+              awslogs: []
+              jq: []
+          commands:
+            01_add_instance_to_cluster:
+              command:
+                Fn::Sub: echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
+            02_add_ec2_user_to_docker_group:
+              command: usermod -a -G docker ec2-user
+            03_mkdir_docker:
+              command: mkdir /home/ec2-user/.docker
+              test: '[ ! -d /home/ec2-user/.docker ]'
+            04_chown_docker:
+              command: chown ec2-user:ec2-user /home/ec2-user/.docker
+            05_login_to_ecr:
+              command:
+                Fn::Sub: sudo -H -u ec2-user sh -c "$(/usr/bin/aws ecr get-login --no-include-email
+                  --region ${AWS::Region})"
+            06_runner_config:
+              command:
+                Fn::Sub: 'TOKEN=$(curl --request POST "${GitlabURL}/api/v4/runners"
+                  --form "token=${RunnerToken}" --form "description=${AWS::StackName}"
+                  --form "tag_list=${TagList}" | jq -r ".token")
+
+                  sed -i ''s/${RunnerToken}/''$TOKEN''/g'' /var/app/config/config.toml
+
+                  '
+          files:
+            /etc/cfn/cfn-hup.conf:
+              mode: '000400'
+              owner: root
+              group: root
+              content:
+                Fn::Sub: '[main]
+
+                  stack=${AWS::StackId}
+
+                  region=${AWS::Region}
+
+                  '
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content:
+                Fn::Sub: '[cfn-auto-reloader-hook]
+
+                  triggers=post.update
+
+                  path=Resources.ECSLaunchConfiguration.Metadata.AWS::CloudFormation::Init
+
+                  action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack
+                  ${AWS::StackName} --resource ECSLaunchConfiguration
+
+                  '
+            /etc/awslogs/awscli.conf:
+              content:
+                Fn::Sub: '[plugins]
+
+                  cwlogs = cwlogs
+
+                  [default]
+
+                  region = ${AWS::Region}
+
+                  '
+            /etc/awslogs/awslogs.conf:
+              content:
+                Fn::Sub: '[general]
+
+                  state_file = /var/lib/awslogs/agent-state
+
+                  [/var/log/dmesg]
+
+                  file = /var/log/dmesg
+
+                  log_group_name = ${ECSLogGroup}
+
+                  log_stream_name = {instance_id}/var/log/dmesg
+
+                  [/var/log/messages]
+
+                  file = /var/log/messages
+
+                  log_group_name = ${ECSLogGroup}
+
+                  log_stream_name = {instance_id}/var/log/messages
+
+                  datetime_format = %b %d %H:%M:%S
+
+                  [/var/log/docker]
+
+                  file = /var/log/docker
+
+                  log_group_name = ${ECSLogGroup}
+
+                  log_stream_name = {instance_id}/var/log/docker
+
+                  datetime_format = %Y-%m-%dT%H:%M:%S.%f
+
+                  [/var/log/ecs/ecs-init.log]
+
+                  file = /var/log/ecs/ecs-init.log.*
+
+                  log_group_name = ${ECSLogGroup}
+
+                  log_stream_name = {instance_id}/var/log/ecs-init
+
+                  datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                  [/var/log/ecs/ecs-agent.log]
+
+                  file = /var/log/ecs/ecs-agent.log.*
+
+                  log_group_name = ${ECSLogGroup}
+
+                  log_stream_name = {instance_id}/var/log/ecs/ecs-agent
+
+                  datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                  [/var/log/ecs/audit.log]
+
+                  file = /var/log/ecs/audit.log.*
+
+                  log_group_name = ${ECSLogGroup}
+
+                  log_stream_name = {instance_id}/var/log/ecs/audit
+
+                  datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                  '
+            /var/log/docker-login.log:
+              mode: '000700'
+              owner: ec2-user
+              group: ec2-user
+              content: logs
+            /var/log/docker-volume-prune.log:
+              mode: '000700'
+              owner: ec2-user
+              group: ec2-user
+              content: logs
+            /var/spool/cron/ec2-user:
+              mode: '000600'
+              owner: ec2-user
+              group: ec2-user
+              content:
+                Fn::Sub: '0 0,8,16 * * * /bin/bash -xc "$(/usr/bin/aws ecr get-login
+                  --no-include-email --region ${AWS::Region}) >> /var/log/docker-login.log
+                  2>&1"
+
+                  13 0,8,16 * * * docker system prune -f >> /var/log/docker-volume-prune.log
+                  2>&1
+
+                  '
+            /var/app/config/config.toml:
+              mode: '000600'
+              owner: ec2-user
+              group: ec2-user
+              content:
+                Fn::Sub: "concurrent = 1\ncheck_interval = 0\n\n[[runners]]\n  name\
+                  \ = \"${RunnerName}\"\n  url = \"${GitlabURL}/\"\n  token = \"${RunnerToken}\"\
+                  \n  executor = \"docker\"\n  [runners.docker]\n    tls_verify =\
+                  \ false\n    image = \"docker:git\"\n    privileged = false\n  \
+                  \  disable_cache = false\n    volumes = [\"/var/run/docker.sock:/var/run/docker.sock\"\
+                  , \"root-cache:/root/.cache\", \"/home/ec2-user/.docker:/root/.docker\"\
+                  ]\n    cache_dir = \"/cache\"\n    shm_size = 0\n  [runners.cache]\n"
+          services:
+            sysvinit:
+              cfn-hup:
+                enabled: true
+                ensureRunning: true
+                files:
+                - /etc/cfn/cfn-hup.conf
+                - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+              awslogs:
+                enabled: true
+                ensureRunning: true
+                files:
+                - /etc/awslogs/awslogs.conf
+                - /etc/awslogs/awscli.conf
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: gitlab-runner
+      TaskRoleArn:
+        Ref: TaskRole
+      NetworkMode: bridge
+      ContainerDefinitions:
+      - Image:
+          Ref: GitlabRunnerImage
+        Essential: true
+        Memory: 1024
+        Name: rf-gitlab-runner
+        PortMappings:
+        - ContainerPort: 80
+          HostPort: 80
+          Protocol: tcp
+        MountPoints:
+        - ContainerPath: /etc/gitlab-runner
+          SourceVolume: gitlab-runner-config
+        - ContainerPath: /home/gitlab-runner
+          SourceVolume: gitlab-runner-home
+        - ContainerPath: /root/.docker
+          SourceVolume: docker-creds
+        - ContainerPath: /var/run
+          SourceVolume: var-run
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: ECSLogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: gitlab-runner
+      Volumes:
+      - Host:
+          SourcePath: /home/ec2-user/.docker
+        Name: docker-creds
+      - Host:
+          SourcePath: /var/app/config
+        Name: gitlab-runner-config
+      - Host:
+          SourcePath: /var/opt/gitlab-runner-home
+        Name: gitlab-runner-home
+      - Host:
+          SourcePath: /var/run
+        Name: var-run
+  Service:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName:
+        Fn::Sub: ${AWS::StackName}-runner
+      Cluster:
+        Ref: ECSCluster
+      SchedulingStrategy: DAEMON
+      TaskDefinition:
+        Ref: TaskDefinition

@@ -1,0 +1,684 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating Security Rule for the MFM 
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions: 
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId",   Envr], cyc]
+    PRD: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId",  Name]]], prd]
+    STG: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId",  Name]]], stg]
+    INT: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId",  Name]]], int]
+    QA: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId",  Name]]], qa]
+    QIN: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId",  Name]]], qin]
+    MO: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId",  Name]]], mo]
+    DEV: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId",  Name]]], dev]   
+    NPRD: !Or 
+        - Condition: DEV
+        - Condition: QA  
+        - Condition: QIN
+    NINT: !Not [Condition: INT]   
+    PROD: !Or 
+        - Condition: PRD
+        - Condition: STG
+        - Condition: INT 
+        - Condition: MO 
+    Wspace2: !Not [!Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Wspace2], '127.0.0.0/24']]
+
+Resources:   
+    cycmfmwebeg1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters: 
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-web-sgid']]
+                CideB: !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", CIDR],'.32.0/20']]
+                PCole: 6
+                Sport: 11080
+                Eport: 11188
+                Type: 'Egress'
+                Desc: CYC Communication ports
+
+    cycmfmwebeg2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters: 
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-web-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Wafip]
+                PCole: 6
+                Sport: 443
+                Eport: 443
+                Type: 'Egress'
+                Desc: CYC Communication ports
+
+    cycmfmwebeg3: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters: 
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-web-sgid']]
+                CideB: !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", CIDR],'.32.0/20']]
+                PCole: 6
+                Sport: 8443
+                Eport: 8443
+                Type: 'Egress'
+                Desc: Actian out Communication port              
+
+    cycmfmwebig1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters: 
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-web-sgid']]
+                CideB: '0.0.0.0/0'
+                PCole: 6
+                Sport: 443
+                Eport: 443
+                Type: 'Ingress'
+                Desc: Accepting external HTTPS Traffic 
+
+    cycmfmmsig1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-ms-sgid']]
+                CideB: !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", CIDR],'.32.0/20']]
+                PCole: 6
+                Sport: 11080
+                Eport: 11188
+                Type: 'Ingress'
+                Desc: CYC Communication ports
+
+    cycmfmmsig2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-ms-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Wspace]
+                PCole: 6
+                Sport: 11080
+                Eport: 11188
+                Type: 'Ingress'
+                Desc: CYC Communication ports from WorkSapce
+
+    cycmfmmsig2a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Wspace2
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-ms-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Wspace2]
+                PCole: 6
+                Sport: 11080
+                Eport: 11188
+                Type: 'Ingress'
+                Desc: CYC Communication ports from WorkSapce 2
+
+    cycmfmmsig3: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-ms-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Wspace]
+                PCole: 6
+                Sport: 22
+                Eport: 22
+                Type: 'Ingress'
+                Desc: CYC SSH Communication ports from Workspace 
+
+    cycmfmmsig3a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Wspace2
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-ms-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Wspace2]
+                PCole: 6
+                Sport: 22
+                Eport: 22
+                Type: 'Ingress'
+                Desc: CYC SSH Communication ports from Workspace 2
+
+    cycmfmmseg1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-ms-sgid']]
+                CideB: '0.0.0.0/0'
+                PCole: 6
+                Sport: 443
+                Eport: 443
+                Type: 'Egress'
+                Desc: CYC HTTPS Communication Outgoing
+
+    cycmfmmseg2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-ms-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Ocidb]
+                PCole: 6
+                Sport: 1521
+                Eport: 1523
+                Type: 'Egress'
+                Desc: CYC OCI Communication ports             
+
+    cycmfmslaig1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-sla-sgid']]
+                CideB: '0.0.0.0/0'
+                PCole: 6
+                Sport: 443
+                Eport: 443
+                Type: 'Ingress'
+                Desc: CYC HTTPS Incoming Communication 
+
+    cycmfmslaeg1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-sla-sgid']]
+                CideB: '0.0.0.0/0'
+                PCole: 6
+                Sport: 443
+                Eport: 443
+                Type: 'Egress'
+                Desc: CYC HTTPS Communication Outgoing
+
+    cycmfmslaeg2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-sla-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Ocidb]
+                PCole: 6
+                Sport: 1521
+                Eport: 1523
+                Type: 'Egress'
+                Desc: CYC OCI Communication ports  
+
+    cycmfmrdseg1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-rds-sgid']]
+                CideB: '0.0.0.0/0'
+                PCole: 6
+                Sport: 443
+                Eport: 443
+                Type: 'Egress'
+                Desc: CYC HTTPS Communication Outgoing                
+
+    cycmfmsplig1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Wspace]
+                PCole: 6
+                Sport: 3389
+                Eport: 3389
+                Type: 'Ingress'
+                Desc: EC2 Windows RDS communication 
+
+    cycmfmsplig1a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Wspace2
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Wspace2]
+                PCole: 6
+                Sport: 3389
+                Eport: 3389
+                Type: 'Ingress'
+                Desc: EC2 Windows RDS communication 2
+
+    cycmfmsplig2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Wafip]
+                PCole: 6
+                Sport: 443
+                Eport: 443
+                Type: 'Ingress'
+                Desc: HTTPS traffic from WAF
+
+    cycmfmsplig3: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", CIDR],'.32.0/20']]
+                PCole: 6
+                Sport: 443
+                Eport: 443
+                Type: 'Ingress'
+                Desc: HTTPS traffic between MFM segment 
+
+    cycmfmsplig4: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", CIDR],'.32.0/20']]
+                PCole: 6
+                Sport: 11091
+                Eport: 11091
+                Type: 'Ingress'
+                Desc: HTTPS traffic between MFM segment 
+
+    cycmfmsplig5: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", CIDR],'.32.0/20']]
+                PCole: 6
+                Sport: 8443
+                Eport: 8443
+                Type: 'Ingress'
+                Desc: Actian HTTPS traffic between MFM segment 
+
+    cycmfmsplig6: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Wspace]
+                PCole: 6
+                Sport: 22
+                Eport: 22
+                Type: 'Ingress'
+                Desc: SSH traffic between MFM segment and Workspace
+
+    cycmfmsplig6a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Wspace2
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Wspace2]
+                PCole: 6
+                Sport: 22
+                Eport: 22
+                Type: 'Ingress'
+                Desc: SSH traffic between MFM segment and Workspace 2
+
+    cycmfmsplig6a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: '10.64.162.0/23'
+                PCole: 6
+                Sport: 22
+                Eport: 22
+                Type: 'Ingress'
+                Desc: SSH traffic from Cloud East VPN segment 
+
+    cycmfmsplig6b: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: '10.96.162.0/23'
+                PCole: 6
+                Sport: 22
+                Eport: 22
+                Type: 'Ingress'
+                Desc: SSH traffic from Cloud West VPN segment  
+
+    cycmfmsplig7: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Wafip]
+                PCole: 6
+                Sport: 11180
+                Eport: 11180
+                Type: 'Ingress'
+                Desc: CYC Connection from WAF 
+
+    cycmfmsplig8: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", adec01]
+                PCole: 6
+                Sport: 20
+                Eport: 65535
+                Type: 'Ingress'
+                Desc: CYC AD East Input Communication ports     
+
+    cycmfmsplig9: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", adwc01]
+                PCole: 6
+                Sport: 20
+                Eport: 65535
+                Type: 'Ingress'
+                Desc: CYC AD West Input Communication ports  
+
+    cycmfmsplig12a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1, corpdc1]]], '.', !Select [1, !Split [',', !FindInMap [Infra, envr1, corpdc1]]],'/32']]
+                PCole: -1
+                Sport: 2049
+                Eport: 2049
+                Type: 'Ingress'
+                Desc: CYC corp Domain Controler 1 Input Communication ports
+
+    cycmfmsplig12b: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1, corpdc2]]], '.', !Select [1, !Split [',', !FindInMap [Infra, envr1, corpdc2]]],'/32']]
+                PCole: -1
+                Sport: 2049
+                Eport: 2049
+                Type: 'Ingress'
+                Desc: CYC corp Domain Controler 2 Input Communication ports
+
+    cycmfmsplig12c: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: PROD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1, prddc1]]], '.', !Select [1, !Split [',', !FindInMap [Infra, envr1, prddc1]]],'/32']]
+                PCole: -1
+                Sport: 2049
+                Eport: 2049
+                Type: 'Ingress'
+                Desc: CYC Prd Domain Controler 1 Input Communication ports
+
+    cycmfmsplig12d: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: PROD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1, prddc1]]], '.', !Select [2, !Split [',', !FindInMap [Infra, envr1, prddc1]]],'/32']]
+                PCole: -1
+                Sport: 2049
+                Eport: 2049
+                Type: 'Ingress'
+                Desc: CYC Prd Domain Controler 2 Input Communication ports    
+
+    cycmfmspleg1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: '0.0.0.0/0'
+                PCole: 6
+                Sport: 443
+                Eport: 443
+                Type: 'Egress'
+                Desc: CYC HTTPS Communication Outgoing
+
+    cycmfmspleg2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", Ocidb]
+                PCole: 6
+                Sport: 1521
+                Eport: 1523
+                Type: 'Egress'
+                Desc: CYC OCI Communication ports       
+
+    cycmfmspleg3: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", adec01]
+                PCole: 6
+                Sport: 20
+                Eport: 65535
+                Type: 'Egress'
+                Desc: CYC AD East Output Communication ports     
+
+    cycmfmspleg4: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !FindInMap [Infra, !Ref "AWS::AccountId", adwc01]
+                PCole: 6
+                Sport: 20
+                Eport: 65535
+                Type: 'Egress'
+                Desc: CYC AD West Output Communication ports  
+
+    cycmfmspleg5: 
+        Type: 'AWS::CloudFormation::Stack'
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !Join [ '', [!FindInMap [Infra, !Ref "AWS::AccountId", CIDR],".141.0/25" ]]
+                PCole: 6
+                Sport: 22
+                Eport: 22
+                Type: 'Egress'
+                Desc: ACTIAN access to EFS Folder                  
+
+    cycmfmspleg6a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1, corpdc1]]], '.', !Select [1, !Split [',', !FindInMap [Infra, envr1, corpdc1]]],'/32']]
+                PCole: -1
+                Sport: 2049
+                Eport: 2049
+                Type: 'Egress'
+                Desc: CYC corp Domain Controler 1 Output Communication ports
+
+    cycmfmspleg6b: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: NPRD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1, corpdc2]]], '.', !Select [1, !Split [',', !FindInMap [Infra, envr1, corpdc2]]],'/32']]
+                PCole: -1
+                Sport: 2049
+                Eport: 2049
+                Type: 'Egress'
+                Desc: CYC corp Domain Controler 2 Output Communication ports
+
+    cycmfmspleg6c: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: PROD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1, prddc1]]], '.', !Select [1, !Split [',', !FindInMap [Infra, envr1, prddc1]]], '/32']]
+                PCole: -1
+                Sport: 2049
+                Eport: 2049
+                Type: 'Egress'
+                Desc: CYC Prd Domain Controler 1 Output Communication ports
+
+    cycmfmspleg6d: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: PROD
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, SGentry]
+            Parameters:   
+                SGid: 
+                    Fn::ImportValue: 
+                        !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Name],'-spl-sgid']]
+                CideB: !Join ['', [!Select [0, !Split [',', !FindInMap [Infra, envr1, prddc1]]], '.', !Select [2, !Split [',', !FindInMap [Infra, envr1, prddc1]]], '/32']]
+                PCole: -1
+                Sport: 2049
+                Eport: 2049
+                Type: 'Egress'
+                Desc: CYC Prd Domain Controler 2 Output Communication ports                                

@@ -1,0 +1,107 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating Role for NBT Project
+
+Transform:
+    Name: 'AWS::Include'
+    Parameters:
+        Location: 's3://cyc-prd-repository/infra/product/nbt/cycnbtglobalvariables.yml'
+
+Conditions:
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc]
+    CaS3Env: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Name], cyc-mo-nbt]
+
+Resources:
+    cyccdemainpolicy:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global2, mainpolicy]
+            Parameters:
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                SidName: !Join ['',[!Select [0, !Split ['-',!FindInMap [Infra, !Ref "AWS::AccountId", Name]]], !Select [1, !Split ['-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]],!Select [2, !Split ['-',!FindInMap [Infra, !Ref "AWS::AccountId", Name]]]]]
+
+    cycnbttrole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global, trole]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                Rootid: !FindInMap [Infra, !Ref "AWS::AccountId", Accid]
+                Recarn1: !Join ['/', ['arn:aws:s3:::cyc-repository/cyctppbuild/microservices', !Select ['1', !Split ['-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], '*']]
+                Recarn2: !Join ['/', ['arn:aws:s3:::cyc-repository/cycfdrbuild/microservices', !Select ['1', !Split ['-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], '*']]
+                Recarn3: !Join ['/', ['arn:aws:s3:::cyc-build-repository/nbt', !Select ['1', !Split ['-', !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], '*']]
+                CaS3Env: !If [CaS3Env, !FindInMap [Infra, !Ref "AWS::AccountId", CaS3Env], 'no-value']
+
+    cycnbterole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global, erole]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+
+    cycnbtasrole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global, asrole]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+
+    cycnbtdrole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global, lmdrole]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Rootid: !FindInMap [Infra, !Ref "AWS::AccountId", Accid]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+
+    cyccmdebusrole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global, ebuspol]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+
+    cycnbtsarole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global2, corsaccpol]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                PolName: 's3access'
+                S3Access: "YES"
+                Accid1: !FindInMap [Infra, !Ref "AWS::AccountId", MfmId]
+
+    cycnbtxaccountlmdddeploymentrole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global2, xacclmdpol]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                PolName: 'lmdDeploymentAccess'
+                JenkinsAccountId: !FindInMap [Infra, Global, JenkinsAccountId]
+
+    cycxaccountecsdeploymentrole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [Infra, Global2, corsaccpol]
+            Parameters:
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                PolName: 'ecsDeploymentAccess'
+                EcsAccess: "YES"
+                Accid1: !FindInMap [Infra, Global, JenkinsAccountId]

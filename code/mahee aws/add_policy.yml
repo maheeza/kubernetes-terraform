@@ -1,0 +1,66 @@
+---
+  - name: "Tagging of Images"
+    hosts: localhost
+    vars:
+      ecrUrl: "081770291835.dkr.ecr.us-east-1.amazonaws.com"
+      region: "us-east-1"
+      ecsRepoName:
+        - cyctppnbtadminweb-service
+        - cyctppcommandui-service
+        - cyctppinterestprofile-service
+        - cyctppfeesdroolsworkbench-service 
+        - cyctppnbtadmin-service
+        - cyctppportaldata-service
+        - cyctppdroolswb
+        - cyctppaccount-service
+        - cyctppcip-service
+        - cyctppcommand-service
+        - cyctppdocument-service
+        - cyctppemail-service
+        - cyctppemployee-service
+        - cyctppenrollment-service
+        - cyctppesign-service
+        - cyctppfee-service
+        - cyctppmail-service
+        - cyctppnotification-service
+        - cyctppsms-service
+        - cyctpptemptoken-service
+        - cyctppuser-service
+        - cyctppoobportal-service
+        - cyctppauditingweb-service
+        - cyctpptooladmin-service
+        - cyctppstatement-service
+        - cyctppassettransfer-service
+        - cyctpplockbox-service
+        - cycsrvcommand-service
+        - cycsrvcommandui-service
+        - cyctppcommandui-service
+        - cyctppreconciliation-service
+        - cyctppmonetary-service
+      acc_arn: 
+        - arn:aws:iam::687720138916:root
+        - arn:aws:iam::430279352302:root
+    tasks:
+      - name: "set-policy to ecr repository"
+        ecs_ecr:
+          name: "{{ item }}"
+          region: "{{ region }}"
+          policy:
+            Version: '2008-10-17'
+            Statement:
+              - Sid: "cyctppPolicy"
+                Effect: Allow
+                Principal:
+                  AWS: 
+                  
+                    - "{{ acc_arn[0] }}"
+                    - "{{ acc_arn[1] }}"
+                Action: 
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:ListImages
+                  - ecr:DescribeRepositories
+                  - ecr:DescribeImages
+                  
+        with_items: "{{ ecsRepoName }}"

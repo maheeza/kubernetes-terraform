@@ -1,0 +1,311 @@
+'AWSTemplateFormatVersion': '2010-09-09'
+'Description': 'MFM Project Cumulative DDB Template'
+'Transform':
+  'Name': 'AWS::Include'
+  'Parameters':
+    'Location': 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+'Conditions':
+  'Valid':
+    'Fn::Equals':
+    - 'Fn::FindInMap':
+      - 'Infra'
+      - 'Ref': 'AWS::AccountId'
+      - 'Envr'
+    - 'cyc'
+'Resources':
+  'audittrail':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-audit-trail.yml'
+  'StagingCdex':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Staging-CDEX.yml'
+  'Contacts':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Contacts.yml'
+  'Counters':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Counters.yml'
+  'custommappingauditdetail':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-custom-mapping-audit-detail.yml'
+  'custommappingaudit':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-custom-mapping-audit.yml'
+  'custommapping':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-custom-mapping.yml'
+  'ETLLookupValue':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-ETL-Lookup-Value.yml'
+  'ETLLookup':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-ETL-Lookup.yml'
+  'ETLProcess':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-ETL-Process.yml'
+  'FileLog':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-File-Log.yml'
+  'FileMetricLog':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-File-Metric-Log.yml'
+  'FileMetric':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-File-Metric.yml'
+  'FileMetricAll':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-File-MetricAll.yml'
+  'FileMetricFileType':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-File-MetricFileType.yml'
+  'FileParameters':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-File-Parameters.yml'
+  'FileTypeConfigurationAuditDetail':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-File-Type-Configuration-Audit-Detail.yml'
+  'FileTypeConfigurationAudit':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-File-Type-Configuration-Audit.yml'
+  'FileTypeConfiguration':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-File-Type-Configuration.yml'
+  'FileTypeDomainAuditDetail':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-File-Type-Domain-Audit-Detail.yml'
+  'FileTypeDomainAudit':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-File-Type-Domain-Audit.yml'
+  'FileTypeDomain':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-File-Type-Domain.yml'
+  'FTPConfAuditDetail':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-FTP-Conf-Audit-Detail.yml'
+  'FTPConfAudit':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-FTP-Conf-Audit.yml'
+  'ftpconf':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-ftp-conf.yml'
+  'InterfaceScheduleAuditDetail':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Interface-Schedule-Audit-Detail.yml'
+  'InterfaceScheduleAudit':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Interface-Schedule-Audit.yml'
+  'InterfaceSchedule':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Interface-Schedule.yml'
+  'MetricsHistoryCensus':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Metrics-History-Census.yml'
+  'MetricsHistoryClaim':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Metrics-History-Claim.yml'
+  'MetricsHistoryContribution':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Metrics-History-Contribution.yml'
+  'MetricsHistoryEnrollment':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Metrics-History-Enrollment.yml'
+  'Notification':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Notification.yml'
+  'ReferenceLookup':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Reference-Lookup.yml'
+  'RelationshipAuditDetail':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Relationship-Audit-Detail.yml'
+  'RelationshipAudit':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Relationship-Audit.yml'
+  'RelationshipInterfaceAuditDetail':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Relationship-Interface-Audit-Detail.yml'
+  'RelationshipInterfaceAudit':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Relationship-Interface-Audit.yml'
+  'RelationshipInterfaceContact':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Relationship-Interface-Contact.yml'
+  'RelationshipInterface':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Relationship-Interface.yml'
+  'Relationship':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Relationship.yml'
+  'ScheduleReferenceLookup':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Schedule-Reference-Lookup.yml'
+  'ScheduleRun':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Schedule-Run.yml'
+  'StagingAuditDetail':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Staging-Audit-Detail.yml'
+  'StagingAudit':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Staging-Audit.yml'
+  'StagingMetricResult':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Staging-Metric-Result.yml'
+  'StagingRecordAuditDetail':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Staging-Record-Audit-Detail.yml'
+  'StagingRecordAudit':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Staging-Record-Audit.yml'
+  'StagingRecordHistory':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Staging-Record-History.yml'
+  'StagingRecord':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Staging-Record.yml'
+  'StagingInvalidRecord':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Staging-invalid-Record.yml'
+  'StagingReferenceLookup':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Staging-Reference-Lookup.yml'
+  'Staging':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Staging.yml'
+  'StagingFileDependencies':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-StagingFileDependencies.yml'
+  'InterfaceDependencyAudit':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Interface-Dependency-Audit.yml'
+  'InterfaceDependencyAuditDetail':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Interface-Dependency-Audit-Detail.yml'
+  'InterfaceDependencies':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Interface-Dependency.yml'
+  'DeadLetterQueueRecordsAudit':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-Dead_Letter_Queue_Records_Audit.yml'
+  'UOWProcessorLambdaFileAudit':
+    'Type': 'AWS::CloudFormation::Stack'
+    'Condition': 'Valid'
+    'Properties':
+      'TemplateURL': 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-ddb-UOW-Processor-Lambda-File-Audit.yml'
+'Rules': {}

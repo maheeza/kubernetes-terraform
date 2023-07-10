@@ -1,0 +1,185 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: EC2 Access Role and policy
+
+Parameters:
+  Envr:
+      Description: Enter the environment Value please
+      Type: String
+
+  EFS:
+    Description: EFS Policy required
+    Type: String
+    Default: NO
+    AllowedValues:
+      - NO
+      - YES
+
+  Addpol1:
+    Description: Additional Policy 1
+    Type: String
+    Default: noValue
+
+  Addpol2:
+    Description: Aditional Policy 2
+    Type: String
+    Default: noValue
+
+  Owner:
+    Description: Owner of the resource
+    Type: String
+    Default: Sree G
+
+Conditions: 
+  zone1: !Equals [ '1','1']        
+  EFS: !Equals [ !Ref EFS, YES] 
+  Addpol1: !Not [!Equals [ !Ref Addpol1,'noValue']]
+  Addpol2: !Not [!Equals [ !Ref Addpol2,'noValue']]
+
+Resources:
+  cycRole01: 
+    Type: AWS::IAM::Role
+    Condition:  zone1
+    Properties: 
+      RoleName: !Join ["-",[!Ref Envr, ec2, Role01]]
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Principal: 
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+            Effect: "Allow"              
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/CloudWatchAgentAdminPolicy
+      
+
+  cycpolicy01:  
+    Type: 'AWS::IAM::ManagedPolicy'  
+    Condition:  zone1
+    Properties: 
+      Description:  !Join ["-",[!Ref Envr, ec2, Policy01]]
+      Path: /
+      ManagedPolicyName: !Join ["-",[!Ref Envr, ec2, Policy01]]
+      PolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - 
+            Effect: Allow
+            Action: 
+              - s3:*
+            Sid: cycS3accessrequest
+            Resource: 
+              - '*'
+
+      Roles: 
+        - 
+          Ref: cycRole01
+
+  cycefspolicy01:  
+    Type: 'AWS::IAM::ManagedPolicy'  
+    Condition:  EFS
+    Properties: 
+      Description:  !Join ["-",[!Ref Envr, ec2, efs, Policy01]]
+      Path: /
+      ManagedPolicyName: !Join ["-",[!Ref Envr, ec2, efs, Policy01]]
+      PolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - 
+            Effect: Allow
+            Action: 
+              - elasticfilesystem:ClientMount
+              - elasticfilesystem:ClientWrite
+              - elasticfilesystem:ClientRootAccess
+              - elasticfilesystem:CreateAccessPoint
+              - elasticfilesystem:Describe*
+              - elasticfilesystem:ListTagsForResource
+            Sid: cycefsaccessrequest
+            Resource: 
+              - !Join ['', ['arn:aws:elasticfilesystem:us-east-1:', !Ref "AWS::AccountId", ':file-system/fs-*']]
+
+  cycAddpol1:  
+    Type: 'AWS::IAM::ManagedPolicy'  
+    Condition:  Addpol1
+    Properties: 
+      Description:  !Join ["-",[!Ref Envr, ec2, spl, AddPolicy01]]
+      Path: /
+      ManagedPolicyName: !Join ["-",[!Ref Envr, ec2, spl, AddPolicy01]]
+      PolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - 
+            Effect: Allow
+            Action: 
+              - sts:AssumeRole
+            Sid: cycec2spladdploicy01
+            Resource: 
+              - !Ref Addpol1
+
+  cycAddpol2:  
+    Type: 'AWS::IAM::ManagedPolicy'  
+    Condition:  Addpol2
+    Properties: 
+      Description:  !Join ["-",[!Ref Envr, ec2, spl, AddPolicy02]]
+      Path: /
+      ManagedPolicyName: !Join ["-",[!Ref Envr, ec2, spl, AddPolicy02]]
+      PolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - 
+            Effect: Allow
+            Action: 
+              - sts:AssumeRole
+            Sid: cycec2spladdploicy02
+            Resource: 
+              - !Ref Addpol2
+
+      Roles: 
+        - 
+          Ref: cycRole01          
+
+  RootInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+        InstanceProfileName: !Join ["-",[!Ref Envr, ec2, Instance, Role01]]
+        Path: "/"
+        Roles:
+          - !Ref cycRole01
+
+Outputs:
+
+  cycpolicy01Ref:
+    Value: !Ref cycpolicy01
+    Export: 
+      Name: !Join ["-",[!Ref Envr, ec2, Policyid]] 
+    Condition:  zone1
+    Description: Fn::Join ["-", [!Ref Envr, ec2, Policy01 ID ]]            
+
+  cycrole01Ref:
+    Value: !Ref cycRole01
+    Export: 
+      Name: !Join ["-",[!Ref Envr, ec2, Roleid]] 
+    Condition:  zone1
+    Description: Fn::Join ["-", [!Ref Envr, ec2, Role01 ID ]]  
+
+  cycrole01arnRef:
+    Value: !GetAtt [cycRole01, Arn]
+    Export: 
+      Name: !Join ["-",[!Ref Envr, ec2, RoleArn]] 
+    Condition:  zone1
+    Description: Fn::Join ["-", [!Ref Envr, ec2, Role01, Arn]]
+
+  cycrole01InstancearnRef:
+    Value: !GetAtt [RootInstanceProfile, Arn]
+    Export: 
+      Name: !Join ["-",[!Ref Envr, ec2, Instance, RoleArn]] 
+    Condition:  zone1
+    Description: Fn::Join ["-", [!Ref Envr, ec2, instance, Role01, Arn]]   
+
+  cycrole01insRef:
+    Value: !Ref RootInstanceProfile
+    Export: 
+      Name: !Join ["-",[!Ref Envr, ec2, instance, Roleid]] 
+    Condition:  zone1
+    Description: Fn::Join ["-", [!Ref Envr, ec2, instance, Role01 ID ]]   

@@ -1,0 +1,162 @@
+def projectProperties = [
+        [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', numToKeepStr: '10']],
+]
+
+node {
+    try {
+        stage("Setting up pipeline") {
+            env.emailRecipient = "cyc-devops@connectyourcare.com"
+
+            if (params.repo_name?.trim().isEmpty()) {
+                echo "Build triggered automatically after a PR is merged"
+
+                // Printing Webhook information
+                try {
+                    echo "Author details:"
+                    echo "${author_name}"
+                    echo "${author_email}"
+                } catch (error) {
+                    echo error.getMessage()
+                    echo "Missing author details, build"
+                }
+
+                echo "Repository details:"
+                echo "repository name: ${repository_name}"
+                echo "Source branch: ${source_branch}"
+                echo "Source commit id: ${source_commit_id}"
+                echo "Target branch: ${target_branch}"
+                echo "Target short commit id: ${target_short_commit_id}"
+                echo "Target commit id: ${target_commit_id}"
+                echo "Bitbucket project URL: ${bitbucket_project_url}"
+                echo "Bitbucket clone url1: ${bitbucket_clone_url1}"
+                echo "Bitbucket clone url2: ${bitbucket_clone_url2}"
+                echo "Bitbucket PR url: ${bitbucket_pr_url}"
+                echo "Date Created (Epoch): ${date_created_epoch}"
+                echo "Date Merged (Epoch): ${date_merged_epoch}"
+
+                // Setting up variables
+                if (bitbucket_clone_url1.startsWith("https://")) {
+                    env.repoUrl = bitbucket_clone_url1.replace('https://', 'https://jenkinsprd@')
+                } else {
+                    env.repoUrl = bitbucket_clone_url2.replace('https://', 'https://jenkinsprd@')
+                }
+
+                env.repositoryName = repository_name
+                env.targetBranch = target_branch
+                env.targetShortCommitId = target_short_commit_id
+                env.backupFolder = date_merged_epoch
+                env.bitbucketPrUrl = bitbucket_pr_url
+            } else {
+                echo "Build manually triggered"
+
+                echo "Repository details:"
+                echo "repository name: ${params.repo_name}"
+
+                env.repoUrl = "https://bitbucket.connectyourcare.net/scm/dev/${params.repo_name}.git"
+                env.repositoryName = params.repo_name
+                env.targetBranch = "master"
+                env.targetShortCommitId = "MANUAL"
+                env.backupFolder = "MANUAL-${new Date().getTime()}"
+                env.bitbucketPrUrl = ""
+            }
+
+            switch ("${env.repositoryName}") {
+                case "cyc-aws-global-templates":
+                    env.targetS3Folder = "globaltemplate"
+                    break
+
+                case "cyc-aws-cde-templates":
+                    env.targetS3Folder = "product/cde"
+                    break
+
+                case "cyc-aws-cmd-templates":
+                    env.targetS3Folder = "product/cmd"
+                    break
+
+                case "cyc-aws-cmp-templates":
+                    env.targetS3Folder = "product/cmp"
+                    break
+
+                case "cyc-aws-core-templates":
+                    env.targetS3Folder = "product/core"
+                    break
+
+                case "cyc-aws-mfm-templates":
+                    env.targetS3Folder = "product/mfm"
+                    break
+
+                case "cyc-aws-nbt-templates":
+                    env.targetS3Folder = "product/nbt"
+                    break
+
+                case "cyc-aws-devops-tools-templates":
+                    env.targetS3Folder = "product/devops"
+                    break
+            }
+
+            echo "Target S3 Folder: ${env.targetS3Folder}"
+
+            // Update Display Name for build
+            currentBuild.displayName = "#${BUILD_ID}-${env.targetShortCommitId} ${env.repositoryName}]"
+        }
+
+        stage("Checkout repository") {
+            checkout([
+                $class: 'GitSCM',
+                branches: [[name: "${env.targetBranch}"]],
+                doGenerateSubmoduleConfigurations: false,
+                extensions: [
+                    [$class: 'RelativeTargetDirectory', relativeTargetDir: env.repositoryName],
+                ],
+                submoduleCfg: [],
+                userRemoteConfigs: [[credentialsId: 'bitbucket', url: "${env.repoUrl}"]]
+            ])
+        }
+
+        stage('Backup existing templates') {
+            if (!fileExists("$WORKSPACE/backup")) {
+                sh "mkdir -p ./backup"
+            }
+
+            echo "Backing up existing template files"
+            sh "aws s3 sync s3://cyc-prd-repository/infra/${env.targetS3Folder} ./backup/${env.repositoryName}/${env.backupFolder}"
+            echo "Backup completed in ./backup/${env.repositoryName}/${env.backupFolder}"
+        }
+
+        stage ('Sync files') {
+            echo "Synchronizing files to S3 (s3://cyc-prd-repository/infra/${env.targetS3Folder})"
+            sh "aws s3 sync ${env.repositoryName} s3://cyc-prd-repository/infra/${env.targetS3Folder} --sse --exclude '.*' --exclude '*.md'"
+            echo "Synchronization completed, all template files uploaded"
+        }
+
+    } catch (e) {
+        echo e.getMessage()
+        env.error = e.getMessage()
+    } finally {
+        stage('Housekeeping'){
+            // Clean Workspace
+            echo "Cleaning Workspace"
+            sh "rm -rf ./${env.repositoryName}"
+            echo "Performed the cleaning process"
+
+            // Send email
+            echo "Sending email"
+            env.mailbody = "Project Template synchronization to S3 (s3://cyc-prd-repository/infra/${env.targetS3Folder}) performed for ${env.repositoryName}.\n\nPull Request: ${env.bitbucketPrUrl}\n\nFor more info please visit below url\n${env.BUILD_URL}\nThanks"
+
+            if (env.error != null) {
+                def body = "${env.error}\n\n\n${env.mailbody}"
+                sendMail("${env.emailRecipient}", "${env.repositoryName} S3 Synchronization Failed. Branch: ${env.targetBranch}", body)
+                echo "--------------------------------"
+                echo "Exiting after sending the mail"
+                echo "--------------------------------"
+            } else {
+                def body = "${env.mailbody}"
+                sendMail("${env.emailRecipient}", "${env.repositoryName} S3 Synchronization Succeeded. Branch: ${env.targetBranch}", body)
+            }
+        }
+    }
+}
+
+def sendMail(emailRecipient, subject, body){
+	emailext attachmentsPattern: '', body: body, replyTo: '', subject: subject, to: emailRecipient
+}

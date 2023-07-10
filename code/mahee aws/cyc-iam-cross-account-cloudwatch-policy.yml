@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create Cross account access policy - Resource Account
+Parameters:
+  Envr:
+    Description: Enter the environment Value please
+    Type: String
+
+  Owner:
+    Description: Owner of the resource
+    Type: String
+    Default: Kamlesh G
+
+  PolName:
+    Description: Enter Policy Name
+    Type: String
+
+  CloudWatchAccountId:
+    Description: Enter the Monitoring AWS Account Id
+    Type: String
+    Default: noValue
+    
+Conditions:
+  CloudWatchAccountId: !Not [ !Equals [ !Ref CloudWatchAccountId, 'noValue' ] ]
+  
+Resources:
+  cycDevopsExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join [ "-", [ !Ref Envr, !Ref PolName, sharedAC, Role01 ] ]
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS:
+                - !If [ CloudWatchAccountId, !Sub 'arn:aws:iam::${CloudWatchAccountId}:root', !Ref 'AWS::NoValue' ]
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+
+  cycCloudWatchAccess:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      Description: Remote Account CloudWatch Access Policy
+      Path: /
+      ManagedPolicyName: !Join [ "-", [ !Ref Envr, !Ref PolName, sharedAC, "Policy01" ] ]
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:PutLogEvents
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+            Resource:
+              - "*"
+            Sid: "cycCloudWatchPolicy"
+      Roles:
+        - Ref: cycDevopsExecutionRole
+
+Outputs:
+  Devopspolicy:
+    Value: !Ref cycCloudWatchAccess
+    Export:
+      Name: !Join [ "-", [ !Ref Envr, !Ref PolName, sharedAC, Policyid ] ]
+    Description: Fn::Join [ "-", [ global service Policy for, !Ref Envr ] ]
+
+  Devopsrole:
+    Value: !Ref cycDevopsExecutionRole
+    Export:
+      Name: !Join [ "-", [ !Ref Envr, !Ref PolName, sharedAC, Roleid ] ]
+    Description: Fn::Join [ "-", [ global service Role for, !Ref Envr ] ]

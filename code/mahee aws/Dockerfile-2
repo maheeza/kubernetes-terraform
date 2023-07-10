@@ -1,0 +1,12 @@
+FROM 687720138916.dkr.ecr.us-east-1.amazonaws.com/cyc-baseimage-j11latest:
+MAINTAINER DevOps Team, cyc-devops@connectuourcare.com
+RUN mkdir -p /microservices
+RUN chown microapp:microapp /usr/lib/jvm/java-11-amazon-corretto.x86_64/lib/security/cacerts && chown microapp:microapp /microservices && chown -R microapp:microapp /newrelic-java-7.5.0
+USER microapp
+COPY microservice-exec.jar /microservices/microservice-exec.jar
+COPY start_microservice.sh /microservices
+WORKDIR /
+ENV CLASSPATH /microservices/
+EXPOSE 8080
+ENTRYPOINT ["sh", "/microservices/start_microservice.sh"]
+CMD ["default","default"]

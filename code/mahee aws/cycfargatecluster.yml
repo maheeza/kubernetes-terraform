@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create Devops ECS Cluster
+
+Parameters:
+
+  clusterName: 
+    Description: Cluster Name
+    Type: String
+  
+  enableCI: 
+    Description: Enable Container Insights
+    Type: String    
+    Default: "NO"
+    AllowedValues:
+      - "NO"
+      - "YES"   
+  Owner: 
+    Description: Owner Name
+    Type: String
+
+Conditions: 
+
+  enableCI: !Equals [!Ref enableCI,"YES"]
+  disableCI: !Equals [!Ref enableCI,"NO"]
+
+Resources:
+    cycecsclusterdci:
+      Type: AWS::ECS::Cluster
+      Condition: disableCI
+      Properties: 
+        ClusterName: !Ref clusterName
+        Tags: 
+          - 
+            Key: Environment
+            Value: !Join ["-",[!Ref clusterName, '01']]
+          - 
+            Key: Name
+            Value: !Join ["-",[!Ref clusterName, '01']]
+          - 
+            Key: Owner
+            Value: !Ref Owner
+
+    cycecsclustereci:
+      Type: AWS::ECS::Cluster
+      Condition: enableCI
+      Properties: 
+        ClusterName: !Ref clusterName
+        ClusterSettings: 
+          - Name: containerInsights
+            Value: enabled
+        Tags: 
+          - 
+            Key: Environment
+            Value: !Join ["-",[!Ref clusterName, '01']]
+          - 
+            Key: Name
+            Value: !Join ["-",[!Ref clusterName, '01']]
+          - 
+            Key: Owner
+            Value: !Ref Owner
+Outputs:
+
+    cyctg01d:
+        Description: ECS Cluster ID value
+        Condition: disabldci
+        Value: !Ref cycecsclusterdci
+        Export: 
+            Name: !Join ["-",[!Ref clusterName, 'csid']]             
+    cyctg01d:
+        Description: ECS Cluster ID value
+        Condition: enableCI
+        Value: !Ref cycecsclustereci
+        Export: 
+            Name: !Join ["-",[!Ref clusterName, 'csid']]                         

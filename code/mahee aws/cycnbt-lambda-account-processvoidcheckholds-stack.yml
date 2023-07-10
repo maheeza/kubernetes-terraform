@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating Lambda  for  NBT Project 
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/nbt/cycnbtglobalvariables.yml'
+
+Conditions: 
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc]
+    PRD: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], prd]
+
+Resources:   
+    cycnbttppaccountserviceprocessvoidcheckholds: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmd1]
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                LogRetention: !If [PRD, 365, 14]
+                Srvname: !FindInMap [Infra, lambda1, lmd34Name]
+                Codel: 'cyc-build-repository' 
+                Codeb: !Join ['', [ 'nbt/',  !Select [1, !Split ["-",!FindInMap [Infra, !Ref "AWS::AccountId", Name]]], '/lambda/', !FindInMap [Infra, lambda1, lmd34Name], '/', !FindInMap [Infra, lambda1, lmd34Name],'.zip']]
+                Desc:  !Join ['',[!FindInMap [Infra, !Ref "AWS::AccountId", Desc],!FindInMap [Infra, lambda1, lmd34Name]]]
+                Handler: !FindInMap [Infra, lambda1, lmd34hand]
+#                EventPermission: "Yes"
+                Env1Val: 'system'
+                Env2Val: 'system'
+                Env3Val: 
+                   !If
+                    -   PRD
+                    -   !Join ['', ['https://', !FindInMap [ Infra, mserv1a, Srv24Name], '.tpp.', !FindInMap [Infra, !Ref "AWS::AccountId", URL]]]
+                    -   !Join ['', ['https://', !FindInMap [ Infra, mserv1a, Srv24Name], '-', !FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, !Ref "AWS::AccountId", URL]]]                
+                Env4Val: 
+                  !If
+                    -   PRD
+                    -   !Join ['', ['https://', !FindInMap [ Infra, mserv1a, Srv20Name], '.tpp.', !FindInMap [Infra, !Ref "AWS::AccountId", URL], '/users/authenticate']]
+                    -   !Join ['', ['https://', !FindInMap [ Infra, mserv1a, Srv20Name], '-', !FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, !Ref "AWS::AccountId", URL], '/users/authenticate']]
+                Env5Val: 'info'
+                
+                Role: 
+                   Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], lambda, Roleid]]
+                        
+                Runtime: !FindInMap [Infra, lambda1, lmd34Rtime]
+                Tout1: 2
+                SNet1: !Select [0, !Split [",",!FindInMap [Infra, !Ref "AWS::AccountId", slasnet]]]
+                SNet2: !Select [1, !Split [",",!FindInMap [Infra, !Ref "AWS::AccountId", slasnet]]]
+                # Sg1: 
+                  # Fn::ImportValue: 
+                    # !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], sla, sgid]]
+                Sg1: 
+                  Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], sla, sgid]]
+                   
+                    

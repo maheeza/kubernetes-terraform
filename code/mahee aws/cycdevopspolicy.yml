@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create Devops Policy for the environment 
+Parameters:
+  Envr:
+      Description: Enter the environment Value please
+      Type: String
+
+  Owner:
+    Description: Owner of the resource
+    Type: String
+    Default: Sree G
+
+
+Conditions: 
+  zone1:  !Equals [ '1','1']      
+
+Resources:
+  cycdevopsexecutionrole: 
+    Type: AWS::IAM::Role
+    Properties: 
+      RoleName: !Join ["-",[!Ref Envr, devops,execution, Role01]]
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - 'ecs.amazonaws.com'
+                - 'ecs-tasks.amazonaws.com'
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+
+  cyccloudFormationAccess:  
+    Type: 'AWS::IAM::ManagedPolicy'  
+    Condition:  zone1
+    Properties: 
+      Description:  CloudFormationAccess
+      Path: /
+      ManagedPolicyName: !Join ["-",[!Ref Envr, cloudformation, "Policy01"]]
+      PolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - 
+            Effect: Allow
+            Action: 
+              - cloudformation:*
+            Resource: "*"
+            Sid: "cyccloudformationallowPolicy01"
+            Action: 
+               - ecr:GetAuthorizationToken
+               - ecr:BatchCheckLayerAvailability
+               - ecr:GetDownloadUrlForLayer
+               - ecr:BatchGetImage
+               - logs:CreateLogStream
+               - logs:PutLogEvents
+
+      Roles: 
+        - 
+          Ref: cycdevopsexecutionrole
+
+Outputs:
+
+  Devopspolicy:
+    Value: !Ref cyccloudFormationAccess
+    Export: 
+      Name: !Join ["-",[!Ref Envr, devops,execution,Policyid]] 
+    Condition:  zone1
+    Description: Fn::Join ["-", [ DevOps Execution Policy for, !Ref Envr]]
+
+  Devopsrole:
+    Value: !Ref cycdevopsexecutionrole
+    Export: 
+      Name: !Join ["-",[!Ref Envr, devops,execution,Roleid]] 
+    Condition:  zone1
+    Description: Fn::Join ["-", [ DevOps Execution Role for, !Ref Envr]]

@@ -1,0 +1,112 @@
+Mappings: 
+  Info: 
+    '830057678802':
+      Name: cyc-dev-ec-infra
+      Project: infra
+      Envr: dev
+      Disc: CYC Dev environment Infra Project East Coast 
+      cyc: cyc
+      Owner: Sree Ghantasala
+    '480723728077':
+      Name: cyc-qa-ec-cmd
+      Project: cmd  
+      Envr: dev
+      Disc: CYC dev environment CMD Project East Coast 
+      cyc: cyc
+      vpcid: i dont know******************************************
+      snetappid:
+        - i dont know
+        - i dont know
+      snetwebid:
+        - i dont know
+        - i dont know        
+      snetslaid:
+        - i dont know
+        - i dont know
+      snetmsid:
+        - i dont know
+        - i dont know
+      Owner: Jeremy Chwang
+    '921612469390':
+      Name: cyc-qa-ec-infra
+      Project: infra  
+      Envr: qa
+      Disc: CYC qa environment Infra Project East Coast 
+      cyc: cyc
+      Owner: Sree Ghantasala
+    '748098760688':
+      Name: cyc-qa-ec-cmd
+      Project: cmd  
+      Envr: qa
+      Disc: CYC qa environment CMD Project East Coast 
+      cyc: cyc
+      vpcid: i dont know ************************************************
+      snetappid:
+        - i dont know
+        - i dont know
+      snetwebid:
+        - i dont know
+        - i dont know
+      snetslaid:
+        - i dont know
+        - i dont know
+      snetmsid:
+        - i dont know
+        - i dont know
+      Owner: Jeremy Chwang  
+
+  Infra: 
+    '830057678802':
+      Name: cyc-dev-ec-infra
+      CIDR: '10.160'
+      Acid: 830057678802
+      AvZone: us-east-1
+      Disc: CYC Dev East Coast Infra
+      Tgwid: tgw-088c383a85ee93b5a
+      envr: cyc
+      Owner: 'Sree G'      
+    '921612469390':
+      Name: cyc-qa-ec-infra
+      CIDR: '10.161'
+      Acid: 921612469390
+      AvZone: us-east-1
+      Disc: CYC QA East Coast Infra
+      Tgwid: tgw-088c383a85ee93b5a
+      envr: cyc
+      Owner: 'Sree G'      
+    '830057678802b':
+      Name: cyc-mo-ec-infra
+      CIDR: '10.168'
+      Acid: 830057678802b
+      AvZone: us-east-1
+      Disc: CYC MO East Coast Infra
+      Tgwid: tgw-003d8c86476da39aa
+      envr: cyc
+      Owner: 'Sree G'      
+    '830057678802c':
+      Name: cyc-stg-ec-infra
+      CIDR: '10.169'
+      Acid: 830057678802c
+      AvZone: us-east-1
+      Disc: CYC Stg East Coast Infra
+      Tgwid: tgw-003d8c86476da39aa
+      envr: cyc
+      Owner: 'Sree G'      
+    '830057678802d':
+      Name: cyc-prd-ec-infra
+      CIDR: '10.170'
+      Acid: 830057678802d
+      AvZone: us-east-1
+      Disc: CYC Prd East Coast Infra
+      Tgwid: tgw-003d8c86476da39aa
+      envr: cyc
+      Owner: 'Sree G'
+    '830057678802e':
+      Name: cyc-prd-wc-infra
+      CIDR: '10.184'
+      Acid: 830057678802e
+      AvZone: us-west-2
+      Disc: CYC Prd West Coast Infra
+      Tgwid: tgw-003d8c86476da39axx
+      envr: cyc
+      Owner: 'Sree G'      

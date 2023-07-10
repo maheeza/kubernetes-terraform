@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating Policies for MFM Project
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions: 
+    Valid: !Equals [ !FindInMap [ Infra, !Ref "AWS::AccountId", Envr ], cyc ]
+    PRD: !Equals [ !Select [ 1, !Split [ '-', !FindInMap [ Infra, !Ref "AWS::AccountId", Name ] ] ], 'prd' ]
+
+Resources:
+
+    cycmfmtrole: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [ Infra, Global, trole ]
+            Parameters: 
+                Envr: !FindInMap [ Infra, !Ref "AWS::AccountId", Name ]
+                Owner: !FindInMap [ Infra, !Ref "AWS::AccountId", Owner ]
+                Rootid: !FindInMap [ Infra, !Ref "AWS::AccountId", Rootid ]
+                Recarn1: !Join [ '/', [ 'arn:aws:s3:::cyc-repository/cyctppbuild/microservices', !Select [ '1', !Split [ '-', !FindInMap [ Infra, !Ref "AWS::AccountId", Name ] ] ], '*' ] ]
+                Recarn2: !Join [ '/', [ 'arn:aws:s3:::cyc-repository/cycmfmbuild/microservices', !Select [ '1', !Split [ '-', !FindInMap [ Infra, !Ref "AWS::AccountId", Name ] ] ], '*' ] ]
+                Recarn3: !Join [ '/', [ 'arn:aws:s3:::cyc-repository/cycedibuild/microservices', !Select [ '1', !Split [ '-', !FindInMap [ Infra, !Ref "AWS::AccountId", Name ] ] ], '*' ] ]
+                Recarn4: !Join [ '/', [ 'arn:aws:s3:::cyc-build-repository/mfm', !Select [ '1', !Split [ '-', !FindInMap [ Infra, !Ref "AWS::AccountId", Name ] ] ], '*' ] ]
+                ExtPol1: !If
+                    - PRD
+                    - !FindInMap [ Infra, !Ref "AWS::AccountId", Extpol1 ]
+                    - "no-value"
+                ExtPol2: !If
+                    - PRD
+                    - !FindInMap [ Infra, !Ref "AWS::AccountId", Extpol2 ]
+                    - "no-value"
+
+    cycmfmerole: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [ Infra, Global, erole ]
+            Parameters: 
+                Envr: !FindInMap [ Infra, !Ref "AWS::AccountId", Name ]
+                Owner: !FindInMap [ Infra, !Ref "AWS::AccountId", Owner ]
+
+    cycmfmasrole: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [ Infra, Global, asrole ]
+            Parameters: 
+                Envr: !FindInMap [ Infra, !Ref "AWS::AccountId", Name ]
+                Owner: !FindInMap [ Infra, !Ref "AWS::AccountId", Owner ]
+
+    cycmflmdrole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [ Infra, Global, lmdrole ]
+            Parameters: 
+                Envr: !FindInMap [ Infra, !Ref "AWS::AccountId", Name ]
+                Rootid: !FindInMap [ Infra, !Ref "AWS::AccountId", Rootid ]
+                Owner: !FindInMap [ Infra, !Ref "AWS::AccountId", Owner ]
+                ExtPol1: 
+                    !If 
+                        - PRD
+                        - !FindInMap [ Infra, !Ref "AWS::AccountId", Extpol1 ]
+                        - "no-value"
+
+    cycmfmsarole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: PRD
+        Properties:
+            TemplateURL: !FindInMap [ Infra, Global2, corsaccpol ]
+            Parameters:
+                Envr: !FindInMap [ Infra, !Ref "AWS::AccountId", Name ]
+                Owner: !FindInMap [ Infra, !Ref "AWS::AccountId", Owner ]
+                PolName: 's3access'
+                S3Access: "YES"
+                ddbAccess: "YES"
+                Accid1: !FindInMap [ Infra, !Ref "AWS::AccountId", LegacyAccountId ]
+
+    cycmfmebusrole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [ Infra, Global, ebuspol ]
+            Parameters:
+                Envr: !FindInMap [ Infra, !Ref "AWS::AccountId", Name ]
+                Owner: !FindInMap [ Infra, !Ref "AWS::AccountId", Owner ]  

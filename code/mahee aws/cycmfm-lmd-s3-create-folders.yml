@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: CYC S3 stack for MFM Lambda Creation.
+
+Transform:
+  Name: 'AWS::Include'
+  Parameters:
+    Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions:
+  zonea: !Equals [ !FindInMap [ Infra, !Ref "AWS::AccountId", Envr ], cyc ]
+  zoneb: !Equals [ !FindInMap [ Infra, !Ref "AWS::AccountId", AvZone ], !Ref "AWS::Region" ]
+  zone1: !And
+    - Condition: zonea
+    - Condition: zoneb
+
+Resources:
+
+  # Name cannot exceed 64 characters
+
+  cycmfmcdexbucketfolderlambda:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: zone1
+    Properties:
+      TemplateURL: !FindInMap [ Infra, Global, S3folder ]
+      Parameters:
+        S3BucketName: !Join [ "-", [ !FindInMap [ Infra, !Ref "AWS::AccountId", Name ], !FindInMap [ Infra, s3, bk9Name ] ] ]
+        Name: !Join [ "-", [ !FindInMap [ Infra, !Ref "AWS::AccountId", Name ], !FindInMap [ Infra, s3, bk9ShortName ] ] ]
+
+  cycmfmcdexsplitterfolderlambda:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: zone1
+    Properties:
+      TemplateURL: !FindInMap [ Infra, Global, S3folder ]
+      Parameters:
+        S3BucketName: !Join [ "-", [ !FindInMap [ Infra, !Ref "AWS::AccountId", Name ], !FindInMap [ Infra, s3, bk11Name ] ] ]
+        Name: !Join [ "-", [ !FindInMap [ Infra, !Ref "AWS::AccountId", Name ], !FindInMap [ Infra, s3, bk11ShortName ] ] ]
+
+  cycmfmcdexgeneratorfolderlambda:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: zone1
+    Properties:
+      TemplateURL: !FindInMap [ Infra, Global, S3folder ]
+      Parameters:
+        S3BucketName: !Join [ "-", [ !FindInMap [ Infra, !Ref "AWS::AccountId", Name ], !FindInMap [ Infra, s3, bk12Name ] ] ]
+        Name: !Join [ "-", [ !FindInMap [ Infra, !Ref "AWS::AccountId", Name ], !FindInMap [ Infra, s3, bk12ShortName ] ] ]
+        
+  cycmfmfolder01lambda:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: zone1
+    Properties:
+      TemplateURL: !FindInMap [ Infra, Global, S3folder ]
+      Parameters:
+        S3BucketName: !Join [ "-", [ !FindInMap [ Infra, !Ref "AWS::AccountId", Name ], !FindInMap [ Infra, s3, bk3Name ] ] ]
+        Name: !Join [ "-", [ !FindInMap [ Infra, !Ref "AWS::AccountId", Name ], !FindInMap [ Infra, s3, bk3Name ] ] ]      
+
+

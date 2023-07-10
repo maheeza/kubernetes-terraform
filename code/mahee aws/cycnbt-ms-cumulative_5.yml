@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: NBT Project Cumulative MicroService Template
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/nbt/cycnbtglobalvariables.yml'
+
+Conditions: 
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc]
+    
+Resources:  
+
+    statement:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/nbt/cycnbt-ms-statementservice-stack.yml'
+            
+    mail:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/nbt/cycnbt-ms-mailservice-stack.yml'
+
+    employerconfig:
+      Type: 'AWS::CloudFormation::Stack'
+      Condition: Valid
+      Properties:
+        TemplateURL: 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/nbt/cycnbt-ms-employerconfigservice-stack.yml'

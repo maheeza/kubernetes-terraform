@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: MFM Project UOW Lambda Template
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+Conditions: 
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc]
+    
+Resources:  
+    audittrail:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-lmd-uow-enrollment-processor-lambda.yml'
+            
+    Contacts:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-lmd-uow-census-processor-lambda.yml'
+            
+    Counters:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-lmd-uow-census-submitter-lambda.yml'
+    custommappingauditdetail:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-lmd-uow-enrollment-submitter-lambda.yml'
+    custommappingaudit:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-lmd-uow-convertor-lambda.yml'

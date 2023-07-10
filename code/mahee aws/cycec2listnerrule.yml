@@ -1,0 +1,424 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: This is the cyc template for Target Group and Listner
+Parameters:
+
+  Envr:
+    Description: Name of the Environment 
+    Type: String
+
+  Segm:
+    Description: Choose Segmantation of the product 
+    Type: String
+    Default: app
+    AllowedValues:
+      - app
+      - web
+      - ms
+      - ivr
+      - sla
+      - spl
+      - api
+ 
+  LBtype: 
+    Description:  Type of load balancer
+    Type: String
+    Default: application
+    AllowedValues:
+      - application
+      - network
+
+  Protocol:
+    Description:  Type of Target Group Protocol
+    Type: String
+    Default: HTTPS
+    AllowedValues:
+      - HTTPS
+      - TCP
+      - HTTP
+
+  Pri1:
+    Description: Priority 1
+    Type: String
+
+  Pri2:
+    Description: Priority 2
+    Type: String
+    Default: 350
+    
+  Srvname:
+    Description: Service Name Please
+    Type: String
+
+  URL:
+    Description: URL Please
+    Type: String     
+
+  URL2:
+    Description: URL2 Please
+    Type: String    
+    Default: 'no-Value'
+
+  PortN:
+    Description: Enter the target group communication port 
+    Type: Number
+    MaxValue: 11180
+    MinValue: 443
+
+  Hpath:
+    Description: Health Check Path
+    Default: 'no-Value'
+    Type: String
+
+  Vpcid:
+    Description: VPC ID Please
+    Type: String          
+
+  TG1AZ:
+    Description: Target Group 1  Availability Zone
+    Default: 'no-Value'
+    Type: String    
+
+  TG1IP:
+    Description: Target Group 1  IP address of Destination
+    Type: String    
+    Default: ''
+
+  TG1PT:
+    Description: Target Group 1  target port
+    Type: String    
+    Default: ''
+
+  TG2AZ:
+    Description: Target Group 2  Availability Zone
+    Default: 'no-Value'
+    Type: String    
+
+  TG2IP:
+    Description: Target Group 2  IP address of Destination
+    Type: String    
+    Default: ''
+
+  TG2PT:
+    Description: Target Group 2  target port
+    Type: String    
+    Default: ''
+
+  TG3AZ:
+    Description: Target Group 2  Availability Zone
+    Default: 'no-Value'
+    Type: String    
+
+  TG3IP:
+    Description: Target Group 2  IP address of Destination
+    Type: String    
+    Default: ''
+
+  TG3PT:
+    Description: Target Group 2  target port
+    Type: String    
+    Default: ''
+
+  TG4AZ:
+    Description: Target Group 2  Availability Zone
+    Default: 'no-Value'
+    Type: String    
+
+  TG4IP:
+    Description: Target Group 2  IP address of Destination
+    Type: String    
+    Default: ''
+
+  TG4PT:
+    Description: Target Group 2  target port
+    Type: String    
+    Default: ''
+
+  TG5AZ:
+    Description: Target Group 2  Availability Zone
+    Default: 'no-Value'
+    Type: String    
+
+  TG5IP:
+    Description: Target Group 2  IP address of Destination
+    Type: String    
+    Default: ''
+
+  TG5PT:
+    Description: Target Group 2  target port
+    Type: String    
+    Default: ''
+
+  TG6AZ:
+    Description: Target Group 2  Availability Zone
+    Default: 'no-Value'
+    Type: String    
+
+  TG6IP:
+    Description: Target Group 2  IP address of Destination
+    Type: String    
+    Default: ''
+
+  TG6PT:
+    Description: Target Group 2  target port
+    Type: String    
+    Default: ''
+
+  TG7AZ:
+    Description: Target Group 1  Availability Zone
+    Default: 'no-Value'
+    Type: String    
+
+  TG7IP:
+    Description: Target Group 1  IP address of Destination
+    Type: String    
+    Default: ''
+
+  TG7PT:
+    Description: Target Group 1  target port
+    Type: String    
+    Default: ''
+
+  TG8AZ:
+    Description: Target Group 1  Availability Zone
+    Default: 'no-Value'
+    Type: String    
+
+  TG8IP:
+    Description: Target Group 1  IP address of Destination
+    Type: String    
+    Default: ''
+
+  TG8PT:
+    Description: Target Group 1  target port
+    Type: String    
+    Default: ''
+
+  TG9AZ:
+    Description: Target Group 1  Availability Zone
+    Default: 'no-Value'
+    Type: String    
+
+  TG9IP:
+    Description: Target Group 1  IP address of Destination
+    Type: String    
+    Default: ''
+
+  TG9PT:
+    Description: Target Group 1  target port
+    Type: String    
+    Default: ''
+
+  TGAAZ:
+    Description: Target Group 1  Availability Zone
+    Default: 'no-Value'
+    Type: String    
+
+  TGAIP:
+    Description: Target Group 1  IP address of Destination
+    Type: String    
+    Default: ''
+
+  TGAPT:
+    Description: Target Group 1  target port
+    Type: String    
+    Default: ''
+
+  TGBAZ:
+    Description: Target Group 1  Availability Zone
+    Default: 'no-Value'
+    Type: String    
+
+  TGBIP:
+    Description: Target Group 1  IP address of Destination
+    Type: String    
+    Default: ''
+
+  TGBPT:
+    Description: Target Group 1  target port
+    Type: String    
+    Default: ''
+
+  TGCAZ:
+    Description: Target Group 1  Availability Zone
+    Default: 'no-Value'
+    Type: String    
+
+  TGCIP:
+    Description: Target Group 1  IP address of Destination
+    Type: String    
+    Default: ''
+
+  TGCPT:
+    Description: Target Group 1  target port
+    Type: String    
+    Default: ''
+
+  Owner:
+    Description: Owner Info Please
+    Type: String
+    Default: 'Sree G'
+
+Conditions: 
+
+  zonea:  !Equals ['1','1']
+  URL2: !Not [!Equals [!Ref URL2, 'no-Value']]
+  ALB: !Equals [!Ref LBtype, application]
+  NLB: !Equals [!Ref LBtype, network]
+  TG1: !Not [!Equals [!Ref TG1IP, '']]
+  TG2: !Not [!Equals [!Ref TG2IP, '']]
+  TG3: !Not [!Equals [!Ref TG3IP, '']]
+  TG4: !Not [!Equals [!Ref TG4IP, '']]
+  TG5: !Not [!Equals [!Ref TG5IP, '']]
+  TG6: !Not [!Equals [!Ref TG6IP, '']]
+  TG7: !Not [!Equals [!Ref TG7IP, '']]
+  TG8: !Not [!Equals [!Ref TG8IP, '']]
+  TG9: !Not [!Equals [!Ref TG9IP, '']]
+  TGA: !Not [!Equals [!Ref TGAIP, '']]
+  TGB: !Not [!Equals [!Ref TGBIP, '']]
+  TGC: !Not [!Equals [!Ref TGCIP, '']]      
+  Hpath: !Not [!Equals [!Ref Hpath, 'no-Value']]
+  TG1AZ: !Not [!Equals [!Ref TG1AZ, 'no-Value']]
+  TG2AZ: !Not [!Equals [!Ref TG2AZ, 'no-Value']]
+  TG3AZ: !Not [!Equals [!Ref TG3AZ, 'no-Value']]
+  TG4AZ: !Not [!Equals [!Ref TG4AZ, 'no-Value']]
+  TG5AZ: !Not [!Equals [!Ref TG5AZ, 'no-Value']]
+  TG6AZ: !Not [!Equals [!Ref TG6AZ, 'no-Value']]
+  TG7AZ: !Not [!Equals [!Ref TG7AZ, 'no-Value']]
+  TG8AZ: !Not [!Equals [!Ref TG8AZ, 'no-Value']]
+  TG9AZ: !Not [!Equals [!Ref TG9AZ, 'no-Value']]
+  TGAAZ: !Not [!Equals [!Ref TGAAZ, 'no-Value']]
+  TGBAZ: !Not [!Equals [!Ref TGBAZ, 'no-Value']]
+  TGCAZ: !Not [!Equals [!Ref TGCAZ, 'no-Value']]
+
+Resources:  
+
+    ListenerRule1:
+      Type: 'AWS::ElasticLoadBalancingV2::ListenerRule'
+#      Condition: albs
+      DependsOn:
+        - TargetGroup1
+      Properties:
+        Actions:
+          - Type: forward
+            TargetGroupArn: !Ref TargetGroup1
+        Conditions:
+          -   Field: host-header
+              HostHeaderConfig:
+                Values: 
+                  - !Join ["", [!Ref Srvname, "-", !Ref Envr, !Ref URL]]
+        ListenerArn: 
+          Fn::ImportValue: 
+              !Join ["-",[!Ref Envr, !Ref Segm, alblsrid]] 
+        Priority: !Ref Pri1
+
+    ListenerRule2:
+      Type: 'AWS::ElasticLoadBalancingV2::ListenerRule'
+      Condition: URL2
+      DependsOn:
+        - TargetGroup1
+      Properties:
+        Actions:
+          - Type: forward
+            TargetGroupArn: !Ref TargetGroup1
+        Conditions:
+          -   Field: host-header
+              HostHeaderConfig:
+                Values: 
+                  - !Ref URL2
+        ListenerArn: 
+          Fn::ImportValue: 
+              !Join ["-",[!Ref Envr, !Ref Segm, alblsrid]] 
+        Priority: !Ref Pri2
+
+    TargetGroup1:
+      Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+#      Condition: NLB
+      Properties:
+        Name: !Join ["-",[!Ref Envr, !Ref Segm, !Ref Srvname]]
+        Port: !Ref PortN
+        Protocol: !Ref Protocol
+        HealthCheckEnabled: true
+#        HealthCheckIntervalSeconds: !Ref HealthCheckIntervalSeconds
+        HealthCheckPath: !If [Hpath, !Ref Hpath, !Ref 'AWS::NoValue']
+        HealthCheckPort: 'traffic-port'
+        HealthCheckProtocol: !Ref Protocol
+#        HealthCheckTimeoutSeconds: !Ref HealthCheckTimeoutSeconds
+#        HealthyThresholdCount: !Ref HealthyThresholdCount
+#        UnhealthyThresholdCount: !Ref UnhealthyThresholdCount
+        Targets:
+          - !If 
+            - TG1
+            - AvailabilityZone: !If [TG1AZ, !Ref TG1AZ, !Ref 'AWS::NoValue']
+              Id: !Ref TG1IP
+              Port: !Ref TG1PT
+            - !Ref 'AWS::NoValue'
+          - !If 
+            - TG2
+            - AvailabilityZone: !If [TG2AZ, !Ref TG2AZ, !Ref 'AWS::NoValue']
+              Id: !Ref TG2IP
+              Port: !Ref TG2PT
+            - !Ref 'AWS::NoValue'   
+          - !If 
+            - TG3
+            - AvailabilityZone: !If [TG3AZ, !Ref TG3AZ, !Ref 'AWS::NoValue']
+              Id: !Ref TG3IP
+              Port: !Ref TG3PT
+            - !Ref 'AWS::NoValue'
+          - !If 
+            - TG4
+            - AvailabilityZone: !If [TG4AZ, !Ref TG4AZ, !Ref 'AWS::NoValue']
+              Id: !Ref TG4IP
+              Port: !Ref TG4PT
+            - !Ref 'AWS::NoValue'   
+          - !If 
+            - TG5
+            - AvailabilityZone: !If [TG5AZ, !Ref TG5AZ, !Ref 'AWS::NoValue']
+              Id: !Ref TG5IP
+              Port: !Ref TG5PT
+            - !Ref 'AWS::NoValue'
+          - !If 
+            - TG6
+            - AvailabilityZone: !If [TG6AZ, !Ref TG6AZ, !Ref 'AWS::NoValue']
+              Id: !Ref TG6IP
+              Port: !Ref TG6PT
+            - !Ref 'AWS::NoValue'   
+          - !If 
+            - TG7
+            - AvailabilityZone: !If [TG7AZ, !Ref TG7AZ, !Ref 'AWS::NoValue']
+              Id: !Ref TG7IP
+              Port: !Ref TG7PT
+            - !Ref 'AWS::NoValue'
+          - !If 
+            - TG8
+            - AvailabilityZone: !If [TG8AZ, !Ref TG8AZ, !Ref 'AWS::NoValue']
+              Id: !Ref TG8IP
+              Port: !Ref TG8PT
+            - !Ref 'AWS::NoValue'   
+          - !If 
+            - TG9
+            - AvailabilityZone: !If [TG9AZ, !Ref TG9AZ, !Ref 'AWS::NoValue']
+              Id: !Ref TG9IP
+              Port: !Ref TG9PT
+            - !Ref 'AWS::NoValue'
+          - !If 
+            - TGA
+            - AvailabilityZone: !If [TGAAZ, !Ref TGAAZ, !Ref 'AWS::NoValue']
+              Id: !Ref TGAIP
+              Port: !Ref TGAPT
+            - !Ref 'AWS::NoValue'   
+          - !If 
+            - TGB
+            - AvailabilityZone: !If [TGBAZ, !Ref TGBAZ, !Ref 'AWS::NoValue']
+              Id: !Ref TGBIP
+              Port: !Ref TGBPT
+            - !Ref 'AWS::NoValue'
+          - !If 
+            - TGC
+            - AvailabilityZone: !If [TGCAZ, !Ref TGCAZ, !Ref 'AWS::NoValue']
+              Id: !Ref TGCIP
+              Port: !Ref TGCPT
+            - !Ref 'AWS::NoValue'   
+
+        VpcId: !Ref Vpcid
+        TargetType: ip                
+               

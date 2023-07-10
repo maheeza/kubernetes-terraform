@@ -1,0 +1,89 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description:  This is Globla Template for creating CYC standard SQS
+Parameters:
+  RefVal:
+      Description: Reference Value for callback
+      Type: String
+
+  Bsize:
+    Description: The maximum number of items to retrieve in a single batch
+    Type: Number
+    Default: 100
+
+  Dconfig:
+      Description: QS queue or Amazon SNS topic destination ARN
+      Type: String
+      Default: 'no-value'  
+
+  Enabled:
+    Description: Maximum Message Size
+    Type: String
+    Default: true
+    AllowedValues:
+      - true
+      - false
+
+  EvsArn: 
+    Description: The Amazon Resource Name (ARN) of the event source
+    Type: String
+
+  FNArn:
+    Description: The name of the Lambda function Arn
+    Type: String
+
+  MBSWIS:
+    Description: The maximum amount of time to gather records before invoking the function, in seconds
+    Type: Number
+    Default: 30
+
+  MRAIS:
+    Description: he maximum age of a record that Lambda sends to a function for processing
+    Type: Number
+    Default: 600
+
+  MRAtt:
+    Description: The maximum number of times to retry when the function returns an error
+    Type: Number
+    Default: 10
+
+  PLFact:
+    Description: The number of batches to process from each shard concurrently
+    Type: Number
+    Default: 1
+
+Conditions: 
+  Valid: !And  
+    -  !Not [!Equals [ !Ref EvsArn,'no-value']]
+    -  !Not [!Equals [ !Ref FNArn,'no-value']]
+  Dconfig: !Not [!Equals [ !Ref Dconfig,'no-value']]
+
+Resources:
+    cyceventsourcemaping:
+      Condition: Valid 
+      Type: AWS::Lambda::EventSourceMapping
+      Properties: 
+        BatchSize: !Ref Bsize
+        DestinationConfig: 
+          !If 
+            - Dconfigue 
+            - 
+              OnFailure:
+                Destination: !Ref Dconfig
+            - !Ref 'AWS::NoValue'
+        Enabled: !Ref Enabled
+        EventSourceArn: !Ref EvsArn
+        FunctionName: !Ref FNArn
+        MaximumBatchingWindowInSeconds: !Ref MBSWIS
+        MaximumRecordAgeInSeconds: !Ref MRAIS
+        MaximumRetryAttempts: !Ref MRAtt
+        ParallelizationFactor: !Ref PLFact
+#        StartingPosition: String
+
+Outputs:
+
+  cyceventsourcemapingarn:
+    Condition: Valid
+    Value: !Ref cyceventsourcemaping
+    Export: 
+      Name: !Join ["-",[!Ref RefVal,id]] 
+    Description: Fn::Join ["-", [  'Resource Event Source Mapping for ', !Ref RefVal]]

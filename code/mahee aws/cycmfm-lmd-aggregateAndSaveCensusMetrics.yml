@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating ALB  for  MFM Project aggregateAndSaveCensusMetrics
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions: 
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc]
+    PRD: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], prd]
+    QIN: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], qin]
+
+Resources:   
+    aggregateAndSaveCensusMetrics: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmd1]
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                LogRetention: !If [PRD, 365, 14]
+                Srvname: !FindInMap [Infra, lambda3, lmd47Name]
+                #Codel: 'cyc-prd-repository'                 
+                #Codeb: !Join ['',[!FindInMap [Infra, Global,lambdaurl], '/', !Select [1, !Split ["-",!FindInMap [Infra, !Ref "AWS::AccountId", Name]]], '/', !FindInMap [Infra, lambda3, lmd47Name], '/', !FindInMap [Infra, lambda3, lmd47Name],'.zip']]
+                #Desc: !Join [' ',[!FindInMap [Infra, !Ref "AWS::AccountId", Desc],!FindInMap [Infra, lambda3, lmd47Name]]]
+                Codel: !FindInMap [Infra, Global, buildS3Folder]
+                Codeb: !Join ['', ['mfm/', !Select [1, !Split ["-",!FindInMap [Infra, !Ref "AWS::AccountId", Name]]], '/lambda/', !FindInMap [Infra, lambda3, lmd47Name] , '/', !FindInMap [Infra, lambda3, lmd47Name],'.zip']]
+                Desc: !Join [' ', [!FindInMap [Infra, !Ref "AWS::AccountId", Desc],!FindInMap [Infra, lambda3, lmd47Name]]]
+                Handler: !FindInMap [Infra, lambda3, lmd47hand]
+                cwlpref: '/cyc/lambda/'
+                Env1Val: 
+                  !If
+                    -  PRD
+                    -  'trace'                    
+                    -  'info' 
+                Env2Val: !Join ['_',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], Staging]]
+                Env3Val: !Join ['_',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], Metrics, History, Census]]
+                Env4Val: !Sub
+                    - ${env}-${value}-sqs
+                    - env: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                      value: !FindInMap [Infra, sqs1, sqs12Name]
+                Env5Val: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda3, lmd45Name]]]
+                Role:  
+                  Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], lambda, Roleid]]
+                Runtime: !FindInMap [Infra, lambda3, lmd47Rtime]
+                Tout1: 120
+                Memory: 512
+                SNet1: !Select [0, !Split [",",!FindInMap [Infra, !Ref "AWS::AccountId", slasnet]]]
+                SNet2: !Select [1, !Split [",",!FindInMap [Infra, !Ref "AWS::AccountId", slasnet]]]
+                Sg1: 
+                  Fn::ImportValue:  
+                    !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], sla, sgid]]
+                Layers: !Join ['',['arn:aws:lambda:', !Ref "AWS::Region", ':580247275435:layer:LambdaInsightsExtension:14']]
+                Tracfg: 'Active'

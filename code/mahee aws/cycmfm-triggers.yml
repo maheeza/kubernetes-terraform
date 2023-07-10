@@ -1,0 +1,288 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating Lambda  for  MFM Project sendpending waiting on dependency file email
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions: 
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc]
+    PRD: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], prd]
+    DEV: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], dev]
+
+Resources:
+
+    cycmfmpwondepfilesEents: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, 'evrule']
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+#                EvBusCreate: "YES"
+                EvBusName: default
+                EvRulName: !Join ['', [!FindInMap [Infra, lambda2, lmd30Name], RuleA]]
+                RoleArn: !Join ["", ["arn:aws:iam::", !Ref "AWS::AccountId", ":role/", !FindInMap [Infra, !Ref "AWS::AccountId", Name], "-eventbus-Role01a"]]
+#                  Fn::ImportValue: 
+#                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], eventbus, RoleArn]]                
+                ScheduleExpression: "cron(0/60 * * * ? *)"
+#                ScheduleExpression: "rate(12 hours)"                
+                State: "ENABLED"
+                TargetsArn1: 
+                  Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd30Name], id]] 
+                TargetsID1: !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd30Name], RuleA, id]]
+
+    cycmfmpwondepfileslmdpermission: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+          - cycmfmpwondepfilesEents
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmdevper]
+            Parameters: 
+                Function: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd30Name]]]
+                SourceArn: !GetAtt [cycmfmpwondepfilesEents, Outputs.CYCEventRuleArb]
+                Principal: 'events.amazonaws.com'
+
+    cycmfmuowconverterEents: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, 'evrule']
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+#                EvBusCreate: "YES"
+                EvBusName: default
+                EvRulName: !Join ['', [!FindInMap [Infra, lambda, lmd13Name], RuleA]]
+                RoleArn: !Join ["", ["arn:aws:iam::", !Ref "AWS::AccountId", ":role/", !FindInMap [Infra, !Ref "AWS::AccountId", Name], "-eventbus-Role01a"]]
+#                  Fn::ImportValue: 
+#                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], eventbus, RoleArn]]                
+                ScheduleExpression: "cron(0/10 * ? * MON-FRI *)"
+#                ScheduleExpression: "rate(12 hours)"                
+                State: "ENABLED"
+                TargetsArn1: 
+                  Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda, lmd13Name], id]] 
+                TargetsID1: !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda, lmd13Name], RuleA, id]]
+
+    cycmfmuowconverterlmdpermission: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+          - cycmfmuowconverterEents
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmdevper]
+            Parameters: 
+                Function: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda, lmd13Name]]]
+                SourceArn: !GetAtt [cycmfmuowconverterEents, Outputs.CYCEventRuleArb]
+                Principal: 'events.amazonaws.com'
+
+    cycmfmfilenotreceivedforschedulerunevents: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, 'evrule']
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+#                EvBusCreate: "YES"
+                EvBusName: default
+                EvRulName: !Join ['', [!FindInMap [Infra, lambda2, lmd20Name], RuleA]]
+                RoleArn: !Join ["", ["arn:aws:iam::", !Ref "AWS::AccountId", ":role/", !FindInMap [Infra, !Ref "AWS::AccountId", Name], "-eventbus-Role01a"]]
+#                  Fn::ImportValue: 
+#                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], eventbus, RoleArn]]                
+                ScheduleExpression: "cron(0 6 * * ? *)"
+#                ScheduleExpression: "rate(12 hours)"                
+                State: "ENABLED"
+                TargetsArn1: 
+                  Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd20Name], id]] 
+                TargetsID1: !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd20Name], RuleA, id]]               
+
+    cycmfmfilenotreceivedforschedulerunlmdpermission: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+          - cycmfmfilenotreceivedforschedulerunevents
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmdevper]
+            Parameters: 
+                Function: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd20Name]]]
+                SourceArn: !GetAtt [cycmfmfilenotreceivedforschedulerunevents, Outputs.CYCEventRuleArb]
+                Principal: 'events.amazonaws.com'
+                
+    cycmfmsendprocessingalertemailschedulerunevents: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, 'evrule']
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+#                EvBusCreate: "YES"
+                EvBusName: default
+                EvRulName: !Join ['', [!FindInMap [Infra, lambda3, lmd43Name], RuleA]]
+                RoleArn: !Join ["", ["arn:aws:iam::", !Ref "AWS::AccountId", ":role/", !FindInMap [Infra, !Ref "AWS::AccountId", Name], "-eventbus-Role01a"]]
+#                  Fn::ImportValue: 
+#                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], eventbus, RoleArn]]                
+                ScheduleExpression: "cron(0 */1 * * ? *)"
+#                ScheduleExpression: "rate(1 hours)"                
+                State: "ENABLED"
+                TargetsArn1: 
+                  Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda3, lmd43Name], id]] 
+                TargetsID1: !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda3, lmd43Name], RuleA, id]] 
+
+    cycmfmsendprocessingalertemailschedulerunlmdpermission: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+          - cycmfmsendprocessingalertemailschedulerunevents
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmdevper]
+            Parameters: 
+                Function: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda3, lmd43Name]]]
+                SourceArn: !GetAtt [cycmfmsendprocessingalertemailschedulerunevents, Outputs.CYCEventRuleArb]
+                Principal: 'events.amazonaws.com'                
+
+    cycmfmsendfilenotreceivedemailevents: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, 'evrule']
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+#                EvBusCreate: "YES"
+                EvBusName: default
+                EvRulName: !Join ['', [!FindInMap [Infra, lambda2, lmd21Name], RuleA]]
+                RoleArn: !Join ["", ["arn:aws:iam::", !Ref "AWS::AccountId", ":role/", !FindInMap [Infra, !Ref "AWS::AccountId", Name], "-eventbus-Role01a"]]
+#                  Fn::ImportValue: 
+#                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], eventbus, RoleArn]]                
+                ScheduleExpression: "cron(0/6 * * * ? *)"
+#                ScheduleExpression: "rate(12 hours)"                
+                State: "ENABLED"
+                TargetsArn1: 
+                  Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd21Name], id]] 
+                TargetsID1: !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd21Name], RuleA, id]]
+
+    cycmfmsendfilenotreceivedemaillmdpermission: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+          - cycmfmsendfilenotreceivedemailevents
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmdevper]
+            Parameters: 
+                Function: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd21Name]]]
+                SourceArn: !GetAtt [cycmfmsendfilenotreceivedemailevents, Outputs.CYCEventRuleArb]
+                Principal: 'events.amazonaws.com'                
+                
+    cycmfmsfsrememailEents: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, 'evrule']
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+#                EvBusCreate: "YES"
+                EvBusName: default
+                EvRulName: !Join ['', [!FindInMap [Infra, lambda, lmd6Name], RuleA]]
+                RoleArn: !Join ["", ["arn:aws:iam::", !Ref "AWS::AccountId", ":role/", !FindInMap [Infra, !Ref "AWS::AccountId", Name], "-eventbus-Role01a"]]
+#                  Fn::ImportValue: 
+#                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], eventbus, RoleArn]]                
+                ScheduleExpression: "rate(3 hours)"
+#                ScheduleExpression: "rate(12 hours)"                
+                State: "ENABLED"
+                TargetsArn1:
+                  Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda, lmd6Name], id]] 
+                TargetsID1: !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda, lmd6Name], RuleA, id]]
+
+    cycmfmsfsrememaillmdpermission: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+          - cycmfmsfsrememailEents
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmdevper]
+            Parameters: 
+                Function: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda, lmd6Name]]]
+                SourceArn: !GetAtt [cycmfmsfsrememailEents, Outputs.CYCEventRuleArb]
+                Principal: 'events.amazonaws.com'
+
+    cycmfmstgrecaggEents: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, 'evrule']
+            Parameters: 
+                Envr: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+#                EvBusCreate: "YES"
+                EvBusName: default
+                EvRulName: !Join ['', [!FindInMap [Infra, lambda2, lmd31Name], RuleA]]
+                RoleArn: !Join ["", ["arn:aws:iam::", !Ref "AWS::AccountId", ":role/", !FindInMap [Infra, !Ref "AWS::AccountId", Name], "-eventbus-Role01a"]]
+#                  Fn::ImportValue: 
+#                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], eventbus, RoleArn]]                
+                ScheduleExpression: "cron(0/1 * * * ? *)"                                      
+#                ScheduleExpression: "rate(12 hours)"                
+                State: "ENABLED"
+                TargetsArn1:
+                  Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd31Name], id]] 
+                TargetsID1: !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd31Name], RuleA, id]]
+
+    cycmfmstgrecagglmdpermission: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+          - cycmfmstgrecaggEents
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmdevper]
+            Parameters: 
+                Function: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd31Name]]]
+                SourceArn: !GetAtt [cycmfmstgrecaggEents, Outputs.CYCEventRuleArb]
+                Principal: 'events.amazonaws.com'
+                
+    cycmfmstgingrecddblmdpermission: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmdsrc]
+            Parameters: 
+                FunctionName: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd24Name]]]
+                EventInvokeSucc: 
+                  Fn::ImportValue: 
+                    !Join ["-",[!FindInMap [Infra, !Ref "AWS::AccountId", Name], Staging, DynamoDBStream, id]]                
+                Principal: 'dynamodb.amazonaws.com'
+                BatchSize: 100
+
+    cycmfmediinvokersqspermission: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmdevper]
+            Parameters: 
+                Function: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda3, lmd42Name]]]
+                SourceArn: !Join ['',['arn:aws:sqs:',!Ref "AWS::Region",':', !Ref "AWS::AccountId", ':', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-incoming-file-standard-sqs']]
+                Principal: 'sqs.amazonaws.com'
+
+    cycmfminvalidRecordspermission: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmdevper]
+            Parameters: 
+                Function: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda2, lmd22Name]]]
+                SourceArn: !Join ['',['arn:aws:s3:::', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-bucket01a']]
+                Principal: 's3.amazonaws.com'  
+                
+    cycmfmuowconverterpermission: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, lmdevper]
+            Parameters: 
+                Function: !Join ['-',[!FindInMap [Infra, !Ref "AWS::AccountId", Name], !FindInMap [Infra, lambda, lmd13Name]]]
+                SourceArn: !Join ['',['arn:aws:s3:::', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-batch-us-east-1']]
+                Principal: 's3.amazonaws.com'   

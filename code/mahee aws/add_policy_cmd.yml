@@ -1,0 +1,37 @@
+---
+  - name: "Tagging of Images"
+    hosts: localhost
+    vars:
+      ecrUrl: "081770291835.dkr.ecr.us-east-1.amazonaws.com"
+      region: "us-east-1"
+      ecsRepoName:
+        - cyccmdpartnercommand-ui
+        - cyccmdaddnewbusiness-service
+        - cyccommandseriesmono
+        - cyccmdcommandprofile-service
+      acc_arn: 
+        - arn:aws:iam::687720138916:root
+        - arn:aws:iam::430279352302:root
+        - arn:aws:iam::480723728077:root
+    tasks:
+      - name: "set-policy to ecr repository"
+        ecs_ecr:
+          name: "{{ item }}"
+          region: "{{ region }}"
+          policy:
+            Version: '2008-10-17'
+            Statement:
+              - Sid: "cyccmdPolicy"
+                Effect: Allow
+                Principal:
+                  AWS: 
+                    - "{{ acc_arn[0] }}"
+                    - "{{ acc_arn[1] }}"
+                Action: 
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:ListImages
+                  - ecr:DescribeRepositories
+                  - ecr:DescribeImages
+        with_items: "{{ ecsRepoName }}"

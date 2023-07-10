@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Nike Server Health Check
+
+Transform:
+  Name: 'AWS::Include'
+  Parameters: 
+    Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Resources:  
+
+
+    cycecsclientalarm: 
+        Type: 'AWS::CloudFormation::Stack'
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, canalr]
+            Parameters: 
+                AAction1: !Join ['', ['arn:aws:sns:', !Ref "AWS::Region", ':', !Ref "AWS::AccountId", ':', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-file-processing-alerts']]
+                ADesc: !Join ['', [!FindInMap [Infra, !Ref "AWS::AccountId", Name], 'Health Check Alarm for Actian Cobra Server']]
+                AName: !Join ['', [!FindInMap [Infra, !Ref "AWS::AccountId", Name], EDI, Actian, Cobra, Server, Health, Check]]
+                Astatus: true
+                OKActions: []
+                InsufficientDataActions: []
+                COptor: GreaterThanThreshold
+                EVperiod: 1
+                MName: StatusCheckFailed_System
+                NSpace: AWS/EC2
+                Period: 300
+                Statistic: Average
+                Treshold: 0           
+                DPToAlarm: 1
+                DName1: InstanceId
+                DValue1: !FindInMap [ Infra, !Ref "AWS::AccountId", Cobraid1 ]
+                TMD: missing

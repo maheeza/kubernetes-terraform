@@ -1,0 +1,380 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: First migration batch update for MFM Project.
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions: 
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc]
+    PRD: !Equals [!Select [1, !Split ["-", !FindInMap [Infra, !Ref "AWS::AccountId", Name]]], prd]
+
+Resources:
+    mfmkmskey:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, kms]
+#            TimeoutInMinutes: 10
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                kmskey: mfmmaster
+                Desc: 'mfm Master Key for SQS & SNS ==> KMS Key'
+#                Account1: !FindInMap [Infra, !Ref "AWS::AccountId", legaccount]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]                   
+
+# SQS Stacks
+    cycmfmcensusQueue: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs1Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 330
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'yes' 
+                MRC: '100'
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda, lmd16Name]]]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                DLQLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda, lmd15Name]]]
+                BatchSize: 200
+                DS: 0
+                RMTS: 20
+                MBWIS: 120
+    cycmfmenrollmentQueue: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs2Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 330
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'yes'
+                MRC: '100'
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda, lmd17Name]]]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                BatchSize: 10
+                DLQLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda, lmd14Name]]]
+                BatchSize: 200
+                DS: 0
+                RMTS: 20
+                MBWIS: 120
+    cycmfmstagingRecordAggregateQueue: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs16Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 900
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'yes'
+                MRC: '3'
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda, lmd12Name]]]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                BatchSize: 200
+                MBWIS: 120
+                DS: 0                
+    cycmfmemailnotificationqueue: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs3Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 330
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'no' 
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda, lmd9Name]]]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                BatchSize: 1
+    cycmfmstagingsaveValidateRecord: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+#            TimeoutInMinutes: 10
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs4Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 
+                 !If
+                   -  PRD
+                   -  '930'
+                   -  '120'
+                DS: '0'
+                RMTS: '20'
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'yes' 
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda2, lmd29Name]]]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                DLQLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda2, lmd34Name]]]
+                BatchSize: 10
+
+    cycmfmstagingDissectordeadletter: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs5Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 330
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'no'
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda2, lmd33Name]]]                
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+                BatchSize: 1            
+    cycmfmfailedstagingrecordsdeadletter: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs6Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'no' 
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+    cycmfmincomingfilestandard: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs7Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 330
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'yes'
+                MRC: '72'
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda3, lmd42Name]]]                
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+    cycmfmcdexincomingfilestandard: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs22Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 
+                 !If
+                   -  PRD
+                   -  '900'
+                   -  '330' 
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'yes'
+                MRC: '72'
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda, lmd10Name]]]                
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]            
+    cycmfmbatchDeadLetterQueue: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs9Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'no' 
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]  
+    cycmfmcensusMetricsQueue: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs12Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 150
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'yes'
+                MRC: '5'
+                DS: '0'
+                RMTS: '20'
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda3, lmd47Name]]]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+    cycmfmcontributionMetricsQueue: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs14Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 150
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'yes'
+                MRC: '5'
+                DS: '0'
+                RMTS: '20'
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda3, lmd50Name]]]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner] 
+    cycmfmstagingupdateRecordStatus: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs18Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 360
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'yes'
+                MRC: '5'
+                DS: '0'
+                RMTS: '20'
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda4, lmd53Name]]]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]  
+                BatchSize: 1000 
+                MBWIS: 120
+    cycmfmenrollmentMetricsQueue: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs13Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 150
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'yes'
+                MRC: '5'
+                DS: '0'
+                RMTS: '20'
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda3, lmd46Name]]]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]                
+    cycmfmstagingRecordStreammetricsdeadLetter: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs15Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 150
+#                Accid: !Ref "AWS::AccountId"
+                MRC: '5'
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]
+    cycmfmreleaseRecordssqs: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs19Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 600
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'yes'
+                MRC: '5'
+                DS: '0'
+                RMTS: '20'
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda4, lmd58Name]]]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]  
+                BatchSize: 10 
+                
+    cycmfmrejectRecordssqs: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs20Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 600
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'yes'
+                MRC: '5'
+                DS: '0'
+                RMTS: '20'
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda4, lmd59Name]]]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]  
+                BatchSize: 10            
+                
+    cycmfmbatchProcessStagingRecords: 
+        Type: 'AWS::CloudFormation::Stack'
+        DependsOn:
+            - mfmkmskey
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, sqs]
+            Parameters: 
+                Name: !FindInMap [Infra, !Ref "AWS::AccountId", Name]
+                Bsuff: !FindInMap [Infra, sqs1, sqs21Name]
+                KMSID: !GetAtt [mfmkmskey, Outputs.cyckmsid]
+                ViTo: 600
+#                Accid: !Ref "AWS::AccountId"
+                DQP: 'yes'
+                MRC: '5'
+                DS: '0'
+                RMTS: '20'
+                STDLMDArn: !Join ["",['arn:aws:lambda:', !Ref "AWS::Region", ':',  !Ref "AWS::AccountId", ':function:', !FindInMap [Infra, !Ref "AWS::AccountId", Name], '-', !FindInMap [Infra, lambda4, lmd60Name]]]
+                Owner: !FindInMap [Infra, !Ref "AWS::AccountId", Owner]  
+                BatchSize: 10  
+
+        
+                
+                
+                
+                

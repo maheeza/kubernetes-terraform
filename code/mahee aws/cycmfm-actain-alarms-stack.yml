@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating Healthy host count alarm for MFM Environment
+
+Transform:
+  Name: 'AWS::Include'
+  Parameters: 
+    Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions: 
+  PRD: !Equals [ !Select [ 1, !Split [ "-", !FindInMap [ Infra, !Ref "AWS::AccountId", Name ] ] ], prd ]
+
+Resources: 
+ 
+  cycactianalarm: 
+    Type: 'AWS::CloudFormation::Stack'
+    Properties: 
+      TemplateURL: !FindInMap [ Infra, Global, canalr ]
+      Parameters: 
+        AAction1: !Join ['', [ 'arn:aws:sns:', !Ref "AWS::Region", ':', !Ref "AWS::AccountId", ':', !FindInMap [ Infra, !Ref "AWS::AccountId", Name ], '-core-notification' ] ]
+        ADesc: Alarm to detect when an EC2 instance has failed the status checks
+        AName: !Join [ '-', [ !FindInMap [ Infra, !Ref "AWS::AccountId", Name ], act02b ] ]
+        COptor: GreaterThanThreshold
+        EVperiod: 1
+        MName: StatusCheckFailed_System
+        NSpace: AWS/EC2
+        Period: 300
+        Statistic: Average
+        Treshold: 0
+        DPToAlarm: 1
+        DName1: InstanceId
+        DValue1: !FindInMap [ Infra, !Ref "AWS::AccountId", ActianId1 ]
+        TMD: missing

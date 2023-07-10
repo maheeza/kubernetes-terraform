@@ -1,0 +1,257 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create Cross account access policy - Resource Account 
+Parameters:
+  Envr:
+      Description: Enter the environment Value please
+      Type: String
+
+  Owner:
+    Description: Owner of the resource
+    Type: String
+    Default: Sree G
+
+  PolName:
+    Description: Enter Policy Name
+    Type: String
+
+  Accid1:
+    Description: Enter the Account ID 1
+    Type: String
+    Default: noValue
+
+  Accid2:
+    Description: Enter the Account ID 2
+    Type: String
+    Default: noValue
+
+  Accid3:
+    Description: Enter the Account ID 3
+    Type: String
+    Default: noValue
+
+  Accid4:
+    Description: Enter the Account ID 4
+    Type: String
+    Default: noValue
+
+  Accid5:
+    Description: Enter the Account ID 5
+    Type: String
+    Default: noValue
+
+  Accid6:
+    Description: Enter the Account ID 6
+    Type: String
+    Default: noValue
+
+  S3Access:
+    Description: S3 Access Required?
+    Type: String
+    Default: 'NO'
+    AllowedValues:
+      - 'YES'
+      - 'NO'
+
+  ddbAccess:
+    Description: S3 Access Required?
+    Type: String
+    Default: 'NO'
+    AllowedValues:
+      - 'YES'
+      - 'NO'
+
+  EcsAccess:
+    Description: ECS Access Required?
+    Type: String
+    Default: 'NO'
+    AllowedValues:
+      - 'YES'
+      - 'NO'
+  
+  Ec2Access:
+    Description: EC2 Access Required?
+    Type: String
+    Default: 'NO'
+    AllowedValues:
+      - 'YES'
+      - 'NO'
+  
+  SSMAccess:
+    Description: SSM Access Required?
+    Type: String
+    Default: 'NO'
+    AllowedValues:
+      - 'YES'
+      - 'NO'
+      
+Conditions: 
+  zone1:  !Equals [ '1','1']      
+  AC1: !Not [!Equals [ !Ref Accid1,'noValue']]
+  AC2: !Not [!Equals [ !Ref Accid2,'noValue']]
+  AC3: !Not [!Equals [ !Ref Accid3,'noValue']]
+  AC4: !Not [!Equals [ !Ref Accid4,'noValue']]
+  AC5: !Not [!Equals [ !Ref Accid5,'noValue']]
+  AC6: !Not [!Equals [ !Ref Accid6,'noValue']]
+  ddbAccess: !Equals [ !Ref ddbAccess, 'YES']
+  S3Access: !Equals [ !Ref S3Access, 'YES']
+  EcsAccess: !Equals [ !Ref EcsAccess, 'YES']
+  Ec2Access: !Equals [ !Ref Ec2Access, 'YES']
+  SSMAccess: !Equals [ !Ref SSMAccess, 'YES']
+
+Resources:
+  cycdevopsexecutionrole: 
+    Type: AWS::IAM::Role
+    Properties: 
+      RoleName: !Join ["-",[!Ref Envr, !Ref PolName, sharedAC, Role01]]
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              AWS: 
+                - !If [AC1, !Sub 'arn:aws:iam::${Accid1}:root', !Ref 'AWS::NoValue']
+                - !If [AC2, !Sub 'arn:aws:iam::${Accid2}:root', !Ref 'AWS::NoValue']
+                - !If [AC3, !Sub 'arn:aws:iam::${Accid3}:root', !Ref 'AWS::NoValue']
+                - !If [AC4, !Sub 'arn:aws:iam::${Accid4}:root', !Ref 'AWS::NoValue']
+                - !If [AC5, !Sub 'arn:aws:iam::${Accid5}:root', !Ref 'AWS::NoValue']
+                - !If [AC6, !Sub 'arn:aws:iam::${Accid6}:root', !Ref 'AWS::NoValue']
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+
+  cyccloudFormationAccess:  
+    Type: 'AWS::IAM::ManagedPolicy'  
+    Condition:  zone1
+    Properties: 
+      Description:  Remote Account Access Policy
+      Path: /
+      ManagedPolicyName: !Join ["-",[!Ref Envr, !Ref PolName, sharedAC, "Policy01"]]
+      PolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - 
+            Effect: Allow
+            Action: 
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource: "*"
+            Sid: "cycexternalaccountdefaultpolicy"
+          -
+            !If
+              - S3Access
+              - 
+                Effect: Allow
+                Action: 
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetObjectACL
+                  - s3:DeleteObject
+                  - s3:DeleteObjectVersion
+                  - s3:PutObject
+                Resource: 
+                  - !Join ['', ["arn:aws:s3:::", !Ref Envr, "*/*"]]
+                Sid: "cycexternalaccounts3policy"
+              - !Ref 'AWS::NoValue'
+
+          -
+            !If
+              - S3Access
+              - 
+                Effect: Allow
+                Action: 
+                  - s3:ListBucket
+                Resource: 
+                  - !Join ['', ["arn:aws:s3:::", !Ref Envr, "*"]]
+                Sid: "cycexternalaccounts3Listpolicy"
+              - !Ref 'AWS::NoValue'
+
+          -
+            !If
+              - ddbAccess
+              - 
+                Effect: Allow
+                Action: 
+                - dynamodb:BatchGet*
+                - dynamodb:DescribeStream
+                - dynamodb:DescribeTable
+                - dynamodb:Get*
+                - dynamodb:Query
+                - dynamodb:Scan
+                - dynamodb:BatchWrite*
+                - dynamodb:DeleteItem
+                - dynamodb:Update*
+                - dynamodb:PutItem
+                - dynamodb:CreateTableReplica
+
+                Resource: 
+                  - "arn:aws:dynamodb:*:*:table/*"
+                  - "arn:aws:dynamodb:*:*:table/*/index/*"
+                  - "arn:aws:dynamodb:*:*:table/*/stream/*"
+                Sid: "cycexternalaccountDDBAccesspolicy"
+              - !Ref 'AWS::NoValue'
+
+          -
+            !If
+              - EcsAccess
+              - 
+                Effect: Allow
+                Action: 
+                - ecs:List*
+                - ecs:StartTask
+                - ecs:Describe*
+                - ecs:UpdateService
+                
+                Resource: "*"
+                Sid: "cycexternalaccountECSAccesspolicy"
+              - !Ref 'AWS::NoValue'
+          
+          -
+            !If
+              - Ec2Access
+              - 
+                Effect: Allow
+                Action: 
+                - ec2:DescribeInstances
+                - ec2:DescribeTags
+                
+                Resource: "*"
+                Sid: "cycexternalaccountEC2Accesspolicy"
+              - !Ref 'AWS::NoValue'
+          
+          -
+            !If
+              - SSMAccess
+              - 
+                Effect: Allow
+                Action: 
+                - ssm:GetDocument
+                - ssm:List*
+                - ssm:SendCommand
+                
+                Resource: "*"
+                Sid: "cycexternalaccountSSMAccesspolicy"
+              - !Ref 'AWS::NoValue'
+              
+      Roles: 
+        - 
+          Ref: cycdevopsexecutionrole
+
+Outputs:
+
+  Devopspolicy:
+    Value: !Ref cyccloudFormationAccess
+    Export: 
+      Name: !Join ["-",[!Ref Envr, !Ref PolName, sharedAC,Policyid]] 
+    Condition:  zone1
+    Description: Fn::Join ["-", [ global service Policy for, !Ref Envr]]
+
+  Devopsrole:
+    Value: !Ref cycdevopsexecutionrole
+    Export: 
+      Name: !Join ["-",[!Ref Envr, !Ref PolName, sharedAC,Roleid]] 
+    Condition:  zone1
+    Description: Fn::Join ["-", [ global service Role for, !Ref Envr]]

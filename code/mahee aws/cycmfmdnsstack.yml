@@ -1,0 +1,490 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating NACL entry for the MFM 
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions: 
+    Valid: !Equals [!FindInMap [!Ref "AWS::AccountId", mfm,  Envr], cyc]
+    PRD: !Equals [!Select [1, !Split ['-', !FindInMap [!Ref "AWS::AccountId", mfm,  Name]]], 'prd']
+    NPRD: !Not [!Condition PRD]
+
+Resources:   
+
+    cycservice1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv1Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice1a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv1Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+
+    cycservice2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv2Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice2a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv2Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice3: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv3Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice3a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv3Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice4: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv4Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice4a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv4Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice5: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv5Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice5a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv5Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice6: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv6Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice6a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv6Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice7: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv7Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice7a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv7Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice8: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv8Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice8a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv8Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice9: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv9Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice9a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv9Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice10: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv10Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice10a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv10Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice11: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv11Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice11a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv11Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice12: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv12Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice12a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv12Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice14: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv14Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice14a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv14Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice15: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv15Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice15a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv15Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice16: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv16Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice16a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv16Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice17: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv17Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice17a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv17Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice18: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv18Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservice18a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',[!FindInMap [Infra, mserv1, Srv18Name], '-',  !FindInMap [!Ref "AWS::AccountId", mfm, Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL2]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycserviceactian: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',['actian-', !FindInMap [!Ref "AWS::AccountId", mfm,  Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycserviceactian2: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: !Join ['',['cycactian-', !FindInMap [!Ref "AWS::AccountId", mfm,  Name], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, alb]
+
+    cycservicebatch: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service:
+                    !If 
+                        - PRD
+                        - 'batch.connectyourcare.com'
+                        - !Join ['',['batch.', !Select [1, !Split ['-', !FindInMap [!Ref "AWS::AccountId", mfm,  Name]]], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, wafurl]
+
+    cycservicetrace: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service: 
+                    !If 
+                        - PRD
+                        - 'trace.tpp.connectyourcare.com'
+                        - !Join ['',['trace.tpp.', !Select [1, !Split ['-', !FindInMap [!Ref "AWS::AccountId", mfm,  Name]]], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, wafurl]
+
+    cycserviceuser1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service:
+                    !If 
+                        - PRD                
+                        - 'user.tpp.connectyourcare.com'
+                        - !Join ['',['user.tpp.', !Select [1, !Split ['-', !FindInMap [!Ref "AWS::AccountId", mfm,  Name]]], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, wafurl]
+
+    cycservicemfmapps: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service:
+                    !If 
+                        - PRD                
+                        - 'mfmapps.connectyourcare.com'
+                        - !Join ['',['mfmapps', !Select [1, !Split ['-', !FindInMap [!Ref "AWS::AccountId", mfm,  Name]]], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, apirul]
+
+    cycserviceemail1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service:
+                    !If 
+                        - PRD                
+                        - 'email.tpp.connectyourcare.com'
+                        - !Join ['',['email.tpp.', !Select [1, !Split ['-', !FindInMap [!Ref "AWS::AccountId", mfm,  Name]]], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, wafurl]
+
+    cycserviceportal1a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service:
+                    !If 
+                        - PRD                
+                        - 'portal.connectyourcare.com'
+                        - !Join ['',['portal', !Select [1, !Split ['-', !FindInMap [!Ref "AWS::AccountId", mfm,  Name]]], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, wafurl]                
+
+
+    cycserviceemail1: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service:
+                    !If 
+                        - PRD                
+                        - 'email.tpp.connectyourcare.com'
+                        - !Join ['',['email.tpp.', !Select [1, !Split ['-', !FindInMap [!Ref "AWS::AccountId", mfm,  Name]]], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, wafurl]
+
+    cycserviceportal1a: 
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties: 
+            TemplateURL: !FindInMap [Infra, Global, dns]
+            Parameters: 
+                zname: !Join ['',[!FindInMap [!Ref "AWS::AccountId", mfm, RootURL],'.']]
+                Service:
+                    !If 
+                        - PRD                
+                        - 'portal.connectyourcare.com'
+                        - !Join ['',['portal', !Select [1, !Split ['-', !FindInMap [!Ref "AWS::AccountId", mfm,  Name]]], !FindInMap [!Ref "AWS::AccountId", mfm, URL]]]
+                ResRec: !FindInMap [!Ref "AWS::AccountId", mfm, wafurl]     
+
+

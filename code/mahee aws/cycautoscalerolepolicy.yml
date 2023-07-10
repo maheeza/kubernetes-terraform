@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CYC AutoScaling Role and policy
+
+Parameters:
+  Envr:
+      Description: Enter the environment Value please
+      Type: String
+
+  Owner:
+    Description: Owner of the resource
+    Type: String
+    Default: Sree G
+
+Conditions: 
+  zone1:  !Equals [ '1','1']        
+
+Resources:
+  cycRole01: 
+    Type: AWS::IAM::Role
+    Condition:  zone1
+    Properties: 
+      RoleName: !Join ["-",[!Ref Envr, autoscal, Role01]]
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Principal: 
+              Service: 
+                - application-autoscaling.amazonaws.com
+                - ecs.application-autoscaling.amazonaws.com 
+            Action: 
+              - "sts:AssumeRole"              
+            Effect: "Allow"              
+      Path: "/"
+
+  cycpolicy01:  
+    Type: 'AWS::IAM::ManagedPolicy'  
+    Condition:  zone1
+    Properties: 
+      Description:  !Join ["-",[!Ref Envr, autoscal, Policy01]]
+      Path: /
+      ManagedPolicyName: !Join ["-",[!Ref Envr, autoscal, Policy01]]
+      PolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - 
+            Effect: Allow
+            Action: 
+             - ecs:UpdateService
+             - ecs:DescribeServices
+             - application-autoscaling:*
+             - cloudwatch:DescribeAlarms
+             - cloudwatch:GetMetricStatistics
+            Resource: "*"
+      Roles: 
+        - 
+          Ref: cycRole01
+
+Outputs:
+
+  cycpolicy01Ref:
+    Value: !Ref cycpolicy01
+    Export: 
+      Name: !Join ["-",[!Ref Envr, autoscal, Policyid]] 
+    Condition:  zone1
+    Description: Fn::Join ["-", [!Ref Envr, autoscal, Policy01 ID ]]            
+
+  cycrole01Ref:
+    Value: !GetAtt [cycRole01, Arn]
+    Export: 
+      Name: !Join ["-",[!Ref Envr, autoscal, Roleid]] 
+    Condition:  zone1
+    Description: Fn::Join ["-", [!Ref Envr, autoscal, Role01 ID ]]  

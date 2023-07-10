@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Main Access Role and policy
+
+Parameters:
+  Envr:
+      Description: Enter the environment Value please
+      Type: String
+
+  Rootid:
+      Description: Enter the Infra Account ID Please
+      Type: String
+
+  Owner:
+    Description: Owner of the resource
+    Type: String
+    Default: Sree G
+
+CloudWatchRole:
+  Type: 'AWS::IAM::Role'
+  Properties:
+  RoleName: !Join ["-",[!Ref Envr, APIGateway, Role01]]
+    AssumeRolePolicyDocument:
+      Version: 2012-10-17
+      Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - apigateway.amazonaws.com
+          Action: 'sts:AssumeRole'
+    Path: /
+    ManagedPolicyArns:
+      - >-
+        arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+    Tags: 
+      - 
+        Key: Environment
+        Value: !Join [" ",[!Ref Envr, API Gateway, Role01]]
+      - 
+        Key: Name
+        Value: !Join ["-",[!Ref Envr, APIGateway, Role01]]
+      - 
+        Key: Owner
+        Value: !Ref Owner    
+Account:
+  Type: 'AWS::ApiGateway::Account'
+  Properties:
+    CloudWatchRoleArn: !GetAtt 
+      - CloudWatchRole
+      - Arn

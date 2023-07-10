@@ -1,0 +1,81 @@
+pipeline {
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '3'))
+    }
+
+    agent any
+
+    environment {
+        ecrUrl = '687720138916.dkr.ecr.us-east-1.amazonaws.com'
+        ecrRegion = 'us-east-1'
+        imageType = "$params.BaseImageType"
+        tagName = "$params.TagVersion"
+    }
+
+    stages{
+
+        stage('Clone Scripts') {
+            steps {
+                dir('devops') {
+                    checkout([$class: 'GitSCM',branches: [[name: '*/master']],doGenerateSubmoduleConfigurations: false,extensions: [], submoduleCfg: [],userRemoteConfigs: [[ credentialsId: 'bitbucket', url: 'https://jenkinsprd@bitbucket.connectyourcare.net/scm/dev/devops.git' ]]])
+                    script {
+                        if("${imageType}" == "corretto11") {
+                            env.repository = "cyc-baseimage-j11"
+                        }
+                        else if("${imageType}" == "corretto11latest") {
+                            env.repository = "cyc-baseimage-j11latest"
+                        }
+                        else if("${imageType}" == "java8") {
+                            env.repository = "cyc-baseimage-j8"
+                        }
+                        else if("${imageType}" == "Nodejs8") {
+                            env.repository = "cyc-baseimage-njs8"
+                        }
+                        else if("${imageType}" == "corretto11Ext") {
+                            env.repository = "cyc-baseimage-extj11"
+                        }
+                        else if("${imageType}" == "Nodejs12") {
+                            env.repository = "cyc-baseimage-njs12"
+                        }
+                        else if("${imageType}" == "Nodejs14") {
+                            env.repository = "cyc-baseimage-njs14"
+                        }
+                        else {
+                            env.repository = "cyc-baseimage-njs10"
+                        }
+                        echo "ECR repo is ${env.repository}"
+                        echo "Image Type is ${imageType}"
+                        echo "Tag Name ${tagName}"
+
+                        currentBuild.displayName = "#${BUILD_ID} [${imageType} ${tagName}]"
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker'){
+            steps {
+                sh "docker build --no-cache --build-arg package=${imageType} -t ${env.repository} devops/cyc-base-image/docker"
+                sh "docker run -dit --cap-drop=all --name basecontainer ${env.repository}"
+            }
+        }
+
+        stage('Docker Push'){
+            steps{
+                sh 'DOCKER_LOGIN=$(aws ecr get-login --no-include-email --region us-east-1 | sed "s|https://||") && $DOCKER_LOGIN'
+                sh "aws ecr describe-repositories --repository-names $env.repository --region $ecrRegion"
+                sh "docker commit basecontainer $ecrUrl/$env.repository:$tagName"
+                sh "docker push $ecrUrl/$env.repository:$tagName"
+                sh 'docker rm -f basecontainer'
+            }
+        }
+
+    }
+    post{
+        always{
+            sh "docker rmi $env.repository | true"
+            sh "docker rmi $ecrUrl/$env.repository:$tagName | true"
+        }
+    }
+}

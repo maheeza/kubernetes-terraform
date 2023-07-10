@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: MFM Project error Lambda Template
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions: 
+    Valid: !Equals [!FindInMap [Infra, !Ref "AWS::AccountId", Envr], cyc]
+   
+
+Resources:  
+                       
+   # releaseRecords:
+     #   Type: 'AWS::CloudFormation::Stack'
+      #  Condition: Valid
+      #  Properties: 
+          #  TemplateURL: 'https://cyc-prd-repository.s3.amazonaws.com/infra/product/mfm/cycmfm-lmd-releaseRecords.yml' 
+            

@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creating Policies for MFM Project
+
+Transform:
+      Name: 'AWS::Include'
+      Parameters: 
+        Location: 's3://cyc-prd-repository/infra/product/mfm/cycmfmglobalvariables.yml'
+
+Conditions:
+    Valid: !Equals  [ !FindInMap [ Infra, !Ref "AWS::AccountId", Envr ], cyc ]
+    DEV: !Equals [ !Select [ 1, !Split [ "-", !FindInMap [ Infra, !Ref "AWS::AccountId", Name ] ] ], dev ]
+    QA: !Equals [ !Select [ 1, !Split [ "-", !FindInMap [ Infra, !Ref "AWS::AccountId", Name ] ] ], qa ]
+    QIN: !Equals [ !Select [ 1, !Split [ "-", !FindInMap [ Infra, !Ref "AWS::AccountId", Name ] ] ], qin ]
+    MO: !Equals [ !Select [ 1, !Split [ "-", !FindInMap [ Infra, !Ref "AWS::AccountId", Name ] ] ], mo ]
+    PRD: !Equals [ !Select [ 1, !Split [ "-", !FindInMap [ Infra, !Ref "AWS::AccountId", Name ] ] ], prd ]
+    NPRD: !Or
+        - Condition: DEV
+        - Condition: QA
+        - Condition: QIN
+
+Resources:
+
+    cycEcsJenkinsCrossAccountrole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [ Infra, Global2, corsaccpol  ]
+            Parameters:
+                Envr: !FindInMap [ Infra, !Ref "AWS::AccountId", Name ]
+                Owner: !FindInMap [ Infra, !Ref "AWS::AccountId", Owner ]
+                PolName: 'jenkinsEcsDeploymentAccess'
+                EcsAccess: "YES"
+                Accid1: !FindInMap [ Infra, Global, JenkinsAccountId ]
+    
+    cycLambdaJenkinsCrossAccountRole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [ Infra, Global2, xacclmdpol ]
+            Parameters:
+                Envr: !FindInMap [ Infra, !Ref "AWS::AccountId", Name ]
+                Owner: !FindInMap [ Infra, !Ref "AWS::AccountId", Owner ]
+                PolName: 'lmdDeploymentAccess'
+                JenkinsAccountId: !FindInMap [ Infra, Global, JenkinsAccountId ]
+
+    cycCloudWatchCrossAccountRole:
+        Type: 'AWS::CloudFormation::Stack'
+        Condition: Valid
+        Properties:
+            TemplateURL: !FindInMap [ Infra, Global2, xacccloudwatchpolicy ]
+            Parameters:
+                Envr: !FindInMap [ Infra, !Ref "AWS::AccountId", Name ]
+                Owner: !FindInMap [ Infra, !Ref "AWS::AccountId", Owner ]
+                PolName: 'CloudWatchAccess'
+                CloudWatchAccountId: !If 
+                    - PRD
+                    - !FindInMap [ Infra, Global, ProdCloudWatchAccountId ]
+                    - !FindInMap [ Infra, Global, NonProdCloudWatchAccountId ]
